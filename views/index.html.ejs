@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lava VTT</title>
+    <% if (environment === 'production') { %>
+      <link rel="stylesheet" href="<%= manifest['src/main.css'].file %>" />
+    <% } %>
+  </head>
+  <body>
+    <div id="app"></div>
+    <% if (environment === 'production') { %>
+      <script type="module" src="<%= manifest['src/main.js'].file %>"></script>
+    <% } else { %>
+      <script type="module">
+        const host = location.hostname;
+        const viteClientPath = `http://${host}:5173/@vite/client`;
+        const mainPath = `http://${host}:5173/src/main.ts`;
+        const script1 = document.createElement('script');
+        script1.type = 'module';
+        script1.src = viteClientPath;
+        const script2 = document.createElement('script');
+        script2.type = 'module';
+        script2.src = mainPath;
+        document.body.appendChild(script1);
+        document.body.appendChild(script2);
+      </script>
+    <% } %>
+  </body>
+</html>
