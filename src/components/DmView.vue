@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { useSocket } from "../logic/useSocket.ts";
 import { useEventListener } from "@vueuse/core";
 import { FogOfWar } from "../logic/FogOfWar.ts";
+import { useMouse } from "@vueuse/core";
 
 const { emit } = useSocket({
   event: "new-image",
@@ -64,12 +65,23 @@ let off: ReturnType<FogOfWar["onUpdate"]>["off"] | null = null;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-useEventListener(canvasRef, "click", (e) => {
+type Point = { x: number; y: number };
+
+let startPoint: Point | null = null;
+let mouseStart: Point | null = null;
+useEventListener(canvasRef, "mousedown", (e) => {
   if (!canvasRef.value) {
     return;
   }
-  const canvas = canvasRef.value;
 
+  startPoint = getPointOnCanvas(
+    { x: e.clientX, y: e.clientY },
+    canvasRef.value,
+  );
+  mouseStart = { x: mouseX.value, y: mouseY.value };
+});
+
+function getPointOnCanvas(p: Point, canvas: HTMLCanvasElement): Point {
   // Get the bounding rectangle of the canvas
   const rect = canvas.getBoundingClientRect();
 
@@ -78,33 +90,96 @@ useEventListener(canvasRef, "click", (e) => {
   const scaleY = canvas.height / rect.height;
 
   // Adjust mouse event coordinates
-  const canvasX = Math.floor((e.clientX - rect.left) * scaleX);
-  const canvasY = Math.floor((e.clientY - rect.top) * scaleY);
+  const canvasX = Math.floor((p.x - rect.left) * scaleX);
+  const canvasY = Math.floor((p.y - rect.top) * scaleY);
 
-  // canvasX and canvasY are the coordinates in the canvas's internal resolution
-  console.log("Canvas X: " + canvasX + ", Canvas Y: " + canvasY);
+  return { x: canvasX, y: canvasY };
+}
 
-  if (fow) {
-    console.log("set run");
-    const lines: Array<[{ x: number; y: number }, number]> = [];
-    for (let y = canvasY - 100; y < canvasY + 100; y++) {
-      lines.push([{ x: canvasX - 100, y }, 200]);
-    }
+useEventListener(canvasRef, "mouseup", (e) => {
+  if (!canvasRef.value || !startPoint) {
+    return;
+  }
 
-    lines.forEach(([start, length]) => {
-      fow?.drawRunInSingleLine(true, start, length);
-    });
-    console.log(lines[0]);
+  const end = getPointOnCanvas({ x: e.clientX, y: e.clientY }, canvasRef.value);
 
-    fow.update();
+  console.log(startPoint, end);
+  const [topLeft, bottomRight] = getTopLeftAndBottomRight(startPoint, end);
+  paintRectangle(topLeft, bottomRight);
+
+  startPoint = null;
+  if (rectangleRef.value) {
+    rectangleRef.value.style.display = "none";
   }
 });
+
+const shouldCover = ref(false);
+function paintRectangle(topLeft: Point, bottomRight: Point) {
+  if (!fow) {
+    return;
+  }
+
+  const lines: Array<[{ x: number; y: number }, number]> = [];
+  for (let y = topLeft.y; y < bottomRight.y; y++) {
+    lines.push([{ x: topLeft.x, y }, bottomRight.x - topLeft.x]);
+  }
+
+  console.log("painting");
+  lines.forEach(([start, length]) => {
+    fow?.drawRunInSingleLine(shouldCover.value, start, length);
+  });
+
+  console.log("updating");
+  fow.update();
+  console.log("updated");
+}
+
+function getTopLeftAndBottomRight(start: Point, end: Point): [Point, Point] {
+  return [
+    { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y) },
+    { x: Math.max(start.x, end.x), y: Math.max(start.y, end.y) },
+  ];
+}
+
+const rectangleRef = ref<HTMLDivElement | null>(null);
+useEventListener(canvasRef, "mousemove", () => {
+  if (!startPoint || !mouseStart || !rectangleRef.value) {
+    return;
+  }
+
+  const currentX = mouseX.value;
+  const currentY = mouseY.value;
+
+  const width = Math.abs(currentX - mouseStart.x);
+  const height = Math.abs(currentY - mouseStart.y);
+
+  rectangleRef.value.style.left = `${Math.min(currentX, mouseStart.x)}px`;
+  rectangleRef.value.style.top = `${Math.min(currentY, mouseStart.y)}px`;
+  rectangleRef.value.style.width = `${width}px`;
+  rectangleRef.value.style.height = `${height}px`;
+  rectangleRef.value.style.display = "block";
+});
+
+useEventListener("keydown", (e: KeyboardEvent) => {
+  if (e.key === "x") {
+    shouldCover.value = !shouldCover.value;
+  }
+});
+
+const { x: mouseX, y: mouseY } = useMouse();
 </script>
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <img ref="imageRef" :src="imagePath" />
     <canvas :width="width" :height="height" ref="canvasRef" />
+    <div ref="rectangleRef" class="rectangle" />
+    <div
+      class="indicator"
+      :style="{ 'background-color': shouldCover ? 'black' : 'white' }"
+    />
+    <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
+    <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
   </div>
 </template>
 
@@ -126,5 +201,40 @@ canvas {
   justify-content: center;
   align-items: center;
   height: 100vh;
+}
+
+.rectangle {
+  position: absolute;
+  border: 1px dashed red;
+  display: none;
+  pointer-events: none;
+}
+
+.indicator {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 50px;
+  height: 50px;
+  border: 2px solid black;
+}
+
+.vertical-line,
+.horizontal-line {
+  position: absolute;
+  background-color: black;
+  pointer-events: none;
+}
+
+.vertical-line {
+  width: 1px;
+  height: 100%;
+  left: v-bind(mouseX) px;
+}
+
+.horizontal-line {
+  width: 100%;
+  height: 1px;
+  top: v-bind(mouseY) px;
 }
 </style>
