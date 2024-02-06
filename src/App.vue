@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import PlayerView from "./components/PlayerView.vue";
 import { useSocket } from "./logic/useSocket.ts";
-import DmView from "./components/DmView.vue";
+import DmViewV2 from "./components/DmViewV2.vue";
 
 useSocket({ initialize: true });
 
@@ -10,7 +10,7 @@ const isPlayerView = !window.location.search.includes("admin");
 
 <template>
   <PlayerView v-if="isPlayerView" />
-  <DmView v-else />
+  <DmViewV2 v-else />
 </template>
 
 <style scoped></style>
