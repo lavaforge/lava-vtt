@@ -1,0 +1,17 @@
+version: "3.1" # Use Docker Compose file version 3.1
+
+services:
+  mongo:
+    image: mongo:latest # Use the latest official MongoDB image
+    container_name: mongodb # Name your MongoDB container
+    ports:
+      - "27017:27017" # Map the default MongoDB port to the host
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: rootuser # Set the MongoDB root username
+      MONGO_INITDB_ROOT_PASSWORD: rootpass # Set the MongoDB root password
+    volumes:
+      - mongodb_data:/data/db # Persist MongoDB data to a named volume
+
+volumes:
+  mongodb_data: # Define the volume name used above
+    driver: local # Use the local volume driver

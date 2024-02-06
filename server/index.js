@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import path from "path";
 import fs from "fs/promises";
+import { MongoClient } from "mongodb";
 
 const port = process.env.PORT || 3000;
 
@@ -100,11 +101,39 @@ const parseManifest = async () => {
 
 app.use(homepageRouter);
 
+// Connection URL
+const url = "mongodb://rootuser:rootpass@localhost:27017";
+// Replace 'myDatabase' with your database name
+const dbName = "myDatabase";
+
 fs.copyFile(
   path.join(path.resolve(), assetPath(), "current_image.bkp"),
   path.join(path.resolve(), assetPath(), "current_image"),
 ).then(() =>
-  httpServer.listen(port, () => {
+  httpServer.listen(port, async () => {
+    const client = new MongoClient(url);
+
+    try {
+      // Use connect method to connect to the server
+      await client.connect();
+      console.log("Connected successfully to server");
+
+      const db = client.db(dbName);
+
+      // Your database interaction code here
+      // For example, list the available collections
+      const collections = await db.listCollections().toArray();
+      console.log(
+        "Collections:",
+        collections.map((col) => col.name),
+      );
+    } catch (err) {
+      console.error("Connection failed", err);
+    } finally {
+      // Ensure that the client will close when you finish/error
+      await client.close();
+    }
+
     console.log("listening on *:3000");
   }),
 );
