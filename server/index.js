@@ -18,10 +18,6 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 
-app.get("/api/v1/hello", (req, res) => {
-  res.json({ message: "Hello World!" });
-});
-
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
