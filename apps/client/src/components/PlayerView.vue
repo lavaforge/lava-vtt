@@ -15,7 +15,7 @@ const { emit } = useSocket({
 
 const hash = ref(new Date().toISOString());
 const imagePath = computed(
-  () => `${window.location.origin}/image?hash=${hash.value}`,
+  () => `${window.location.origin}/current_image?hash=${hash.value}`,
 );
 
 function toggleFullscreen() {
