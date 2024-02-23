@@ -25,3 +25,6 @@ dist-ssr
 
 # application specific
 public/current_image
+
+
+.nx/cache
