@@ -5,6 +5,9 @@
     "target": "esnext",
     "module": "ESNext",
     "lib": ["esnext", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "shared": ["./libs/shared/src/index.ts"]
+    }
   }
 }
