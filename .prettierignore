@@ -7,3 +7,5 @@ Dockerfile
 
 .eslintignore
 .gitignore
+
+current_image.bkp
