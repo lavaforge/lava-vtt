@@ -6,6 +6,7 @@ Dockerfile
 .prettierignore
 
 .eslintignore
+.eslintrc
 .gitignore
 
 current_image.bkp
