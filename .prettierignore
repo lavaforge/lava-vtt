@@ -9,3 +9,4 @@ Dockerfile
 .gitignore
 
 current_image.bkp
+.gitkeep
