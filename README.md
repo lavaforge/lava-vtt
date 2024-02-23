@@ -16,7 +16,7 @@ npm install
 Running the apps
 
 ```bash
-docker compose up -d mong
+docker compose up -d mongo
 
 nx serve client
 nx serve server
