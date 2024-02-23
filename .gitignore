@@ -27,4 +27,5 @@ dist-ssr
 public/current_image
 
 
+tmp
 .nx/cache

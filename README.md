@@ -13,10 +13,13 @@ Installing dependencies
 npm install
 ```
 
-Running the app in development mode
+Running the apps
 
 ```bash
-npm run dev
+docker compose up -d mong
+
+nx serve client
+nx serve server
 ```
 
 Afterward, the app is reachable at `http://localhost:3000`.
