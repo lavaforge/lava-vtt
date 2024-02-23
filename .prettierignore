@@ -11,3 +11,5 @@ Dockerfile
 
 current_image.bkp
 .gitkeep
+
+*.py
