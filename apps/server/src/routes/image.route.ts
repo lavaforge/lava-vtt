@@ -1,7 +1,8 @@
-import { Router, raw } from 'express';
+import { raw, Router } from 'express';
 import { hashBuffer } from 'shared';
 import { scg } from 'ioc-service-container';
 import { Binary } from 'mongodb';
+import { fileTypeFromBuffer } from 'file-type';
 
 const router = Router();
 
@@ -16,8 +17,9 @@ router.get('/:hash', async (req, res) => {
     return;
   }
 
-  res.set('Content-Type', 'image/png');
-  res.send(image.content.buffer);
+  res
+    .set('Content-Type', (await fileTypeFromBuffer(image.content.buffer)).mime)
+    .send(image.content.buffer);
 });
 
 router.post('/', raw({ limit: '15mb' }), async (req, res) => {
