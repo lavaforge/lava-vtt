@@ -1,11 +1,14 @@
+import re
+
 import cv2
 from pyzbar.pyzbar import decode
 import numpy as np
 import netifaces as net
 import ipaddress
 
-
 NO_QR = "no-qr"
+IPV4_PATTERN = r'\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+
 
 def main():
     if has_network_connection():
@@ -21,7 +24,18 @@ def main():
 
 
 def get_server_ip():
-    return "1.1.1.1"  # TODO: implement: read qr codes until valid ip qr code is read
+    while True:
+        content = read_qr_code()
+        ip_matches = extract_ipv4(content)
+        if len(ip_matches) == 1 and is_valid_ipv4(ip_matches[0]):
+            print("Found valid IPv4:", ip_matches[0])
+            return ip_matches[0]
+        else:
+            print("QR code does not contain valid IPv4. Content was", content)
+
+
+def extract_ipv4(text):
+    return re.findall(IPV4_PATTERN, text)
 
 
 def get_wifi_info_from_qr():
