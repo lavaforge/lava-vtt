@@ -1,4 +1,0 @@
-opencv-python==4.9.0.80
-pyzbar==0.1.9
-numpy==1.26.3
-netifaces==0.11.0
