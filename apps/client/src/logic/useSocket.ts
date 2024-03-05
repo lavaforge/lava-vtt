@@ -1,5 +1,5 @@
-import { io } from "socket.io-client";
-import { onUnmounted } from "vue";
+import { io } from 'socket.io-client';
+import { onUnmounted } from 'vue';
 
 let socket: ReturnType<typeof io> | null = null;
 
@@ -11,20 +11,20 @@ export function useSocket({
   initialize?: boolean;
   event?: string;
   callback?: (data: any) => void;
-}): { emit: ReturnType<typeof io>["emit"] } {
+}): { emit: ReturnType<typeof io>['emit'] } {
   if (initialize) {
     if (socket) {
-      throw new Error("Socket already initialized");
+      throw new Error('Socket already initialized');
     }
 
-    socket = io("");
-    window.addEventListener("beforeunload", () => {
+    socket = io('');
+    window.addEventListener('beforeunload', () => {
       socket?.close();
     });
   }
 
   if (!socket) {
-    throw new Error("Socket not initialized");
+    throw new Error('Socket not initialized');
   }
 
   if (!event && !callback) {
@@ -32,7 +32,7 @@ export function useSocket({
   }
 
   if (!event || !callback) {
-    throw new Error("Missing event or callback");
+    throw new Error('Missing event or callback');
   }
 
   socket.on(event, callback);

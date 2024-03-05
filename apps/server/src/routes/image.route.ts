@@ -18,7 +18,10 @@ router.get('/:hash', async (req, res) => {
   }
 
   res
-    .set('Content-Type', (await fileTypeFromBuffer(image.content.buffer)).mime)
+    .set(
+      'Content-Type',
+      (await fileTypeFromBuffer(image.content.buffer))?.mime ?? 'image/png',
+    )
     .send(image.content.buffer);
 });
 

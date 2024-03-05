@@ -35,7 +35,7 @@ export class FogOfWar {
         return index;
       }
     }
-    throw new Error("Pixel index out of bounds");
+    throw new Error('Pixel index out of bounds');
   }
 
   runIndexToStartPixelIndex(idx: number): number {
@@ -116,7 +116,7 @@ export class FogOfWar {
 
     let total = 0;
 
-    ctx.fillStyle = this.forDm ? "rgba(0, 0, 0, 0.5)" : "black";
+    ctx.fillStyle = this.forDm ? 'rgba(0, 0, 0, 0.5)' : 'black';
     for (const [index, runLength] of this.data.entries()) {
       const isCovered = index % 2 === 0;
       if (!isCovered) {

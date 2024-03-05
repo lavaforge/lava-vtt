@@ -10,14 +10,16 @@
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended",
       "../../.eslintrc.json"
-    ], 
+    ],
+  "ignorePatterns": ["!**/*"],
     "parserOptions": {
-        "sourceType": "module"
+        "sourceType": "module",
+        "project": ["apps/obsidian-plugin/tsconfig.json"]
     },
     "rules": {
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": ["error", { "args": "none" }],
       "no-prototype-builtins": "off",
       "@typescript-eslint/no-empty-function": "off"
-    } 
+    }
   }
