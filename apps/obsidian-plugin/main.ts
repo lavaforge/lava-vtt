@@ -13,7 +13,7 @@ export default class MyPlugin extends Plugin {
       if (target.localName !== 'img') return;
 
       const imgPath = (target as HTMLImageElement).currentSrc;
-      // @ts-expect-error
+      // @ts-expect-error resolveFileUrl is not part of the public API
       const file = this.app.vault.resolveFileUrl(imgPath);
 
       if (!(file instanceof TFile)) return;

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useSocket } from "../logic/useSocket.ts";
-import { useEventListener } from "@vueuse/core";
-import { FogOfWar } from "../logic/FogOfWar.ts";
-import { useMouse } from "@vueuse/core";
+import { computed, ref } from 'vue';
+import { useSocket } from '../logic/useSocket';
+import { useEventListener } from '@vueuse/core';
+import { FogOfWar } from '../logic/FogOfWar';
+import { useMouse } from '@vueuse/core';
 
 const { emit } = useSocket({
-  event: "new-image",
+  event: 'new-image',
   callback: (_data) => {
-    console.log("new image");
+    console.log('new image');
     hash.value = new Date().toISOString();
   },
 });
@@ -25,7 +25,7 @@ const height = ref(0);
 
 let shouldUpdate = true;
 useSocket({
-  event: "fow-broadcast",
+  event: 'fow-broadcast',
   callback: (data) => {
     if (shouldUpdate) {
       fow?.setData(data);
@@ -35,33 +35,33 @@ useSocket({
   },
 });
 
-useEventListener(imageRef, "load", () => {
+useEventListener(imageRef, 'load', () => {
   if (!imageRef.value || !canvasRef.value) {
-    throw new Error("no image or canvas");
+    throw new Error('no image or canvas');
   }
   shouldUpdate = true;
-  emit("loaded");
+  emit('loaded');
 
   width.value = imageRef.value.naturalWidth;
   height.value = imageRef.value.naturalHeight;
 
-  const ctx = canvasRef.value.getContext("2d");
+  const ctx = canvasRef.value.getContext('2d');
   if (!ctx) {
-    throw new Error("no ctx");
+    throw new Error('no ctx');
   }
 
   off?.();
   fow = new FogOfWar(ctx, width.value, height.value, true);
   ({ off } = fow.onUpdate((data) => {
-    console.warn("new fow");
-    emit("new-fow", data);
+    console.warn('new fow');
+    emit('new-fow', data);
   }));
 
   fow.update(true);
 });
 
 let fow: FogOfWar | null = null;
-let off: ReturnType<FogOfWar["onUpdate"]>["off"] | null = null;
+let off: ReturnType<FogOfWar['onUpdate']>['off'] | null = null;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -69,7 +69,7 @@ type Point = { x: number; y: number };
 
 let startPoint: Point | null = null;
 let mouseStart: Point | null = null;
-useEventListener(canvasRef, "mousedown", (e) => {
+useEventListener(canvasRef, 'mousedown', (e) => {
   if (!canvasRef.value) {
     return;
   }
@@ -96,7 +96,7 @@ function getPointOnCanvas(p: Point, canvas: HTMLCanvasElement): Point {
   return { x: canvasX, y: canvasY };
 }
 
-useEventListener(canvasRef, "mouseup", (e) => {
+useEventListener(canvasRef, 'mouseup', (e) => {
   if (!canvasRef.value || !startPoint) {
     return;
   }
@@ -109,7 +109,7 @@ useEventListener(canvasRef, "mouseup", (e) => {
 
   startPoint = null;
   if (rectangleRef.value) {
-    rectangleRef.value.style.display = "none";
+    rectangleRef.value.style.display = 'none';
   }
 });
 
@@ -124,14 +124,14 @@ function paintRectangle(topLeft: Point, bottomRight: Point) {
     lines.push([{ x: topLeft.x, y }, bottomRight.x - topLeft.x]);
   }
 
-  console.log("painting");
+  console.log('painting');
   lines.forEach(([start, length]) => {
     fow?.drawRunInSingleLine(shouldCover.value, start, length);
   });
 
-  console.log("updating");
+  console.log('updating');
   fow.update();
-  console.log("updated");
+  console.log('updated');
 }
 
 function getTopLeftAndBottomRight(start: Point, end: Point): [Point, Point] {
@@ -142,7 +142,7 @@ function getTopLeftAndBottomRight(start: Point, end: Point): [Point, Point] {
 }
 
 const rectangleRef = ref<HTMLDivElement | null>(null);
-useEventListener(canvasRef, "mousemove", () => {
+useEventListener(canvasRef, 'mousemove', () => {
   if (!startPoint || !mouseStart || !rectangleRef.value) {
     return;
   }
@@ -157,11 +157,11 @@ useEventListener(canvasRef, "mousemove", () => {
   rectangleRef.value.style.top = `${Math.min(currentY, mouseStart.y)}px`;
   rectangleRef.value.style.width = `${width}px`;
   rectangleRef.value.style.height = `${height}px`;
-  rectangleRef.value.style.display = "block";
+  rectangleRef.value.style.display = 'block';
 });
 
-useEventListener("keydown", (e: KeyboardEvent) => {
-  if (e.key === "x") {
+useEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.key === 'x') {
     shouldCover.value = !shouldCover.value;
   }
 });

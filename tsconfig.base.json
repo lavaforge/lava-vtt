@@ -6,6 +6,7 @@
     "module": "ESNext",
     "lib": ["esnext", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "strictNullChecks": true,
     "paths": {
       "shared": ["./libs/shared/src/index.ts"]
     }

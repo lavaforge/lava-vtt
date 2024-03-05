@@ -1,11 +1,11 @@
 {
   "root": true,
   "ignorePatterns": ["**/*"],
-  "plugins": ["@nx", "prettier"],
+  "plugins": ["@nx", "prettier", "eslint-plugin-neverthrow"],
   "overrides": [
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.vue"],
-      "extends": ["prettier"],
+      "extends": ["plugin:prettier/recommended"],
       "rules": {
         "@nx/enforce-module-boundaries": [
           "error",
@@ -19,7 +19,8 @@
               }
             ]
           }
-        ]
+        ],
+        "neverthrow/must-use-result": "error"
       }
     },
     {

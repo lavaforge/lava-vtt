@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, ref } from "vue";
-import panzoom from "panzoom";
-import { useEventListener } from "@vueuse/core";
-import { useSocket } from "../logic/useSocket.ts";
-import { FogOfWar } from "../logic/FogOfWar.ts";
+import { computed, ref } from 'vue';
+import panzoom from 'panzoom';
+import { useEventListener } from '@vueuse/core';
+import { useSocket } from '../logic/useSocket';
+import { FogOfWar } from '../logic/FogOfWar';
 
 const { emit } = useSocket({
-  event: "new-image",
+  event: 'new-image',
   callback: (_data) => {
-    console.log("new image");
+    console.log('new image');
     hash.value = new Date().toISOString();
   },
 });
@@ -63,19 +63,19 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 let fow: FogOfWar | null = null;
 
-useEventListener(imageRef, "load", () => {
+useEventListener(imageRef, 'load', () => {
   if (!imageRef.value || !canvasRef.value) {
-    throw new Error("no image or canvas");
+    throw new Error('no image or canvas');
   }
-  emit("loaded");
+  emit('loaded');
 
   height.value = imageRef.value.naturalHeight;
   width.value = imageRef.value.naturalWidth;
   resetZoom();
 
-  const ctx = canvasRef.value.getContext("2d");
+  const ctx = canvasRef.value.getContext('2d');
   if (!ctx) {
-    throw new Error("no context");
+    throw new Error('no context');
   }
 
   fow = new FogOfWar(ctx, width.value, height.value, false);
@@ -83,7 +83,7 @@ useEventListener(imageRef, "load", () => {
 });
 
 useSocket({
-  event: "fow-broadcast",
+  event: 'fow-broadcast',
   callback: (data) => {
     fow?.setData(data);
     fow?.update();
