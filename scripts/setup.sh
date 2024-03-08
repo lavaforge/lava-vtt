@@ -27,6 +27,11 @@ else
     echo "Added gpu_mem=128."
 fi
 
+if grep -q "^[^#]*camera_auto_detect=1" /boot/config.txt; then
+    sed -i "/^[^#]*camera_auto_detect=1/s/^/#/" /boot/config.txt
+    echo "Commented out camera_auto_detect=1."
+fi
+
 
 echo "Updating"
 apt-get update
@@ -37,7 +42,10 @@ echo "Enabling SSH"
 systemctl enable ssh
 systemctl start ssh
 
-# TODO: vnc
+
+echo "Enabling VNC"
+raspi-config nonint do_vnc 0
+
 
 echo "Installing OpenCV"
 apt-get install libopencv-dev -y
@@ -61,6 +69,18 @@ else
     wget https://raw.githubusercontent.com/lavaforge/lava-vtt/raspberryScript/scripts/qr_code.py
 fi
 
-# TODO: put python script in autostart
+
+AUTOSTART_PATH="/etc/xdg/lxsession/LXDE-pi/autostart"
+PYTHON_STARTER="sudo python3 /lava/qr_code.py"
+if [ -f "$AUTOSTART_PATH" ]; then
+    if ! grep -Fxq "$PYTHON_STARTER" "$AUTOSTART_PATH"; then
+        echo "$PYTHON_STARTER" | sudo tee -a "$AUTOSTART_PATH" > /dev/null
+        echo "Line added to the file."
+    else
+        echo "Line already exists in the file."
+    fi
+else
+    echo "File does not exist."
+fi
 
 reboot
