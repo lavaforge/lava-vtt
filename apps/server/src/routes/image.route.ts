@@ -26,9 +26,7 @@ router.get('/:hash', async (req, res) => {
 });
 
 router.post('/', raw({ limit: '15mb' }), async (req, res) => {
-  console.log(req, typeof req);
   const hash = hashBuffer(req.body);
-  console.log(req.body.length, hash);
 
   const db = scg('Db');
 

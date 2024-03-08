@@ -5,8 +5,8 @@ export class FogOfWar {
 
   constructor(
     private readonly context: CanvasRenderingContext2D,
-    private readonly width: number,
-    private readonly height: number,
+    readonly width: number,
+    readonly height: number,
     private readonly forDm: boolean,
   ) {
     this.data = [0, width * height];
@@ -146,6 +146,12 @@ export class FogOfWar {
     }
 
     if (!noNotify) {
+      console.log(
+        'internal notify',
+        this.width,
+        this.height,
+        this.updateListeners,
+      );
       this.updateListeners.forEach((listener) => listener(this.data));
     }
   }
@@ -153,6 +159,7 @@ export class FogOfWar {
   private updateListeners: ((data: number[]) => void)[] = [];
   onUpdate(callback: (data: number[]) => void): { off: () => void } {
     this.updateListeners.push(callback);
+    console.log(this.updateListeners);
     return {
       off: () => {
         this.updateListeners = this.updateListeners.filter(

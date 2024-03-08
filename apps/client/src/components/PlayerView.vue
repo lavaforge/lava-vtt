@@ -4,19 +4,11 @@ import panzoom from 'panzoom';
 import { useEventListener } from '@vueuse/core';
 import { useSocket } from '../logic/useSocket';
 import { FogOfWar } from '../logic/FogOfWar';
+import { scg } from 'ioc-service-container';
 
-const { emit } = useSocket({
-  event: 'new-image',
-  callback: (_data) => {
-    console.log('new image');
-    hash.value = new Date().toISOString();
-  },
-});
-
-const hash = ref(new Date().toISOString());
-const imagePath = computed(
-  () => `${window.location.origin}/current_image?hash=${hash.value}`,
-);
+const apiUrl = scg('apiUrl');
+const hash = ref('');
+const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
 
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
@@ -63,7 +55,7 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 let fow: FogOfWar | null = null;
 
-useEventListener(imageRef, 'load', () => {
+useEventListener(imageRef, 'load', async () => {
   if (!imageRef.value || !canvasRef.value) {
     throw new Error('no image or canvas');
   }
@@ -80,13 +72,30 @@ useEventListener(imageRef, 'load', () => {
 
   fow = new FogOfWar(ctx, width.value, height.value, false);
   fow.update();
+
+  await fetch(`${apiUrl}/api/fow/${hash.value}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data) {
+        fow?.setData(data);
+        fow?.update();
+      }
+    });
 });
 
-useSocket({
+const { emit } = useSocket({
   event: 'fow-broadcast',
   callback: (data) => {
     fow?.setData(data);
     fow?.update();
+  },
+});
+
+useSocket({
+  event: 'new-image',
+  callback: (newHash) => {
+    console.log('new image', newHash);
+    hash.value = newHash;
   },
 });
 
@@ -98,8 +107,11 @@ const containerRef = ref<HTMLDivElement | null>(null);
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
-    <img ref="imageRef" :src="imagePath" />
-    <canvas ref="canvasRef" :height="height" :width="width" />
+    <template v-if="hash">
+      <img ref="imageRef" :src="imagePath" />
+      <canvas ref="canvasRef" :height="height" :width="width" />
+    </template>
+    <div v-else>no image loaded</div>
   </div>
 </template>
 

@@ -4,43 +4,29 @@ import { useSocket } from '../logic/useSocket';
 import { useEventListener } from '@vueuse/core';
 import { FogOfWar } from '../logic/FogOfWar';
 import { useMouse } from '@vueuse/core';
+import { scg } from 'ioc-service-container';
 
 const { emit } = useSocket({
   event: 'new-image',
-  callback: (_data) => {
-    console.log('new image');
-    hash.value = new Date().toISOString();
+  callback: (data) => {
+    hash.value = data;
   },
 });
 
-const hash = ref(new Date().toISOString());
-const imagePath = computed(
-  () => `${window.location.origin}/image?hash=${hash.value}`,
-);
+const apiUrl = scg('apiUrl');
+
+const hash = ref('');
+const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
 
 // log image dimensions once every second
 const imageRef = ref<HTMLImageElement | null>(null);
 const width = ref(0);
 const height = ref(0);
 
-let shouldUpdate = true;
-useSocket({
-  event: 'fow-broadcast',
-  callback: (data) => {
-    if (shouldUpdate) {
-      fow?.setData(data);
-      fow?.update(true);
-      shouldUpdate = false;
-    }
-  },
-});
-
-useEventListener(imageRef, 'load', () => {
+useEventListener(imageRef, 'load', async () => {
   if (!imageRef.value || !canvasRef.value) {
     throw new Error('no image or canvas');
   }
-  shouldUpdate = true;
-  emit('loaded');
 
   width.value = imageRef.value.naturalWidth;
   height.value = imageRef.value.naturalHeight;
@@ -51,7 +37,27 @@ useEventListener(imageRef, 'load', () => {
   }
 
   off?.();
+
+  console.log('before fow', width.value, height.value);
   fow = new FogOfWar(ctx, width.value, height.value, true);
+  try {
+    await fetch(`${apiUrl}/api/fow/${hash.value}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          console.log('setting data', data);
+          fow?.setData(data);
+          fow?.update();
+          console.log('initial update');
+        }
+      });
+  } catch (e) {
+    console.error(e);
+  }
+
+  console.log('after fow fetch');
+
+  console.log(fow.width, fow.height);
   ({ off } = fow.onUpdate((data) => {
     console.warn('new fow');
     emit('new-fow', data);
@@ -171,15 +177,18 @@ const { x: mouseX, y: mouseY } = useMouse();
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
-    <img ref="imageRef" :src="imagePath" />
-    <canvas :width="width" :height="height" ref="canvasRef" />
-    <div ref="rectangleRef" class="rectangle" />
-    <div
-      class="indicator"
-      :style="{ 'background-color': shouldCover ? 'black' : 'white' }"
-    />
-    <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
-    <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
+    <template v-if="hash">
+      <img ref="imageRef" :src="imagePath" />
+      <canvas :width="width" :height="height" ref="canvasRef" />
+      <div ref="rectangleRef" class="rectangle" />
+      <div
+        class="indicator"
+        :style="{ 'background-color': shouldCover ? 'black' : 'white' }"
+      />
+      <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
+      <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
+    </template>
+    <div v-else>no image loaded</div>
   </div>
 </template>
 

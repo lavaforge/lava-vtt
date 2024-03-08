@@ -3,12 +3,22 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { MongoClient } from 'mongodb';
 import { apiRouter } from './routes/api.route';
-import { ServiceContainer } from 'ioc-service-container';
+import { scg, ServiceContainer } from 'ioc-service-container';
+import { FowService } from './services/fow.service';
 
 const port = process.env.PORT || 3000;
 
+const url = 'mongodb://rootuser:rootpass@localhost:27017';
+const dbName = 'lava-vtt-db';
+const client = new MongoClient(url);
+await client.connect();
+const db = client.db(dbName);
+ServiceContainer.set('Db', () => db);
+ServiceContainer.set('FowService', FowService);
+
 const app = express();
 app.use((req, res, next) => {
+  // TODO: Fix for production!!!!!
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Headers',
@@ -19,10 +29,14 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 const httpServer = createServer(app);
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+  },
+});
 
 const fogOfWars = {};
-const currentImage = '';
+let currentImage = '';
 
 io.on('connection', (socket) => {
   console.log('A user connected');
@@ -31,55 +45,24 @@ io.on('connection', (socket) => {
     console.log('A user disconnected');
   });
 
-  if (fogOfWars[currentImage]) {
-    setTimeout(
-      () => socket.emit('fow-broadcast', fogOfWars[currentImage]),
-      100,
-    );
-  }
-
   socket.on('new-fow', (msg) => {
-    fogOfWars[currentImage] = msg;
+    console.log('new fow', msg);
+    const fowService = scg('FowService');
+    void fowService.setFow(currentImage, msg);
     io.emit('fow-broadcast', msg);
-  });
-
-  socket.on('loaded', () => {
-    if (fogOfWars[currentImage]) {
-      socket.emit('fow-broadcast', fogOfWars[currentImage]);
-    }
   });
 });
 
+function newDisplayedImage(hash: string) {
+  currentImage = hash;
+  console.log('new image on server', hash);
+  io.emit('new-image', hash);
+}
+
+ServiceContainer.set('newDisplayedImage', () => newDisplayedImage);
+
 app.use('/api', apiRouter);
 
-// Connection URL
-const url = 'mongodb://rootuser:rootpass@localhost:27017';
-// Replace 'myDatabase' with your database name
-const dbName = 'lava-vtt-db';
-
-const client = new MongoClient(url);
 httpServer.listen(port, async () => {
-  try {
-    // Use connect method to connect to the server
-    await client.connect();
-    console.log('Connected successfully to server');
-
-    const db = client.db(dbName);
-    ServiceContainer.set('Db', () => db);
-
-    // Your database interaction code here
-    // For example, list the available collections
-    const collections = await db.listCollections().toArray();
-    console.log(
-      'Collections:',
-      collections.map((col) => col.name),
-    );
-  } catch (err) {
-    console.error('Connection failed', err);
-  } finally {
-    // Ensure that the client will close when you finish/error
-    // await client.close();
-  }
-
   console.log('listening on *:3000');
 });

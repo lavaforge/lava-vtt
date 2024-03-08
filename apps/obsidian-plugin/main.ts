@@ -76,6 +76,14 @@ export default class MyPlugin extends Plugin {
               } else {
                 console.log('image already exists, no upload necessary');
               }
+
+              await fetch('http://localhost:3000/api/display', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ hash }),
+              });
             } else {
               throw new Error(
                 'Unknown API version, please update this plugin!',

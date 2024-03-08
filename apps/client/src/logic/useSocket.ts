@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { onUnmounted } from 'vue';
+import { scg } from 'ioc-service-container';
 
 let socket: ReturnType<typeof io> | null = null;
 
@@ -17,7 +18,8 @@ export function useSocket({
       throw new Error('Socket already initialized');
     }
 
-    socket = io('');
+    const apiUrl: string = scg('apiUrl');
+    socket = io(apiUrl);
     window.addEventListener('beforeunload', () => {
       socket?.close();
     });
