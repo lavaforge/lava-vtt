@@ -1,4 +1,3 @@
-import re
 import subprocess
 import time
 
@@ -6,11 +5,12 @@ import cv2
 from pyzbar.pyzbar import decode
 import netifaces as net
 import ipaddress
+import requests
 
 NO_QR = "no-qr"
-IPV4_PATTERN = r'\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+ADDRESS_PREFIX = "lava="
 
-
+# TODO: add overlay text to image view what is asked right now (wifi/ip)
 def main():
     if has_network_connection():
         print("Device has network connection.")
@@ -21,19 +21,17 @@ def main():
         connect_to_wifi(ssid, password)
 
     print("Please present a QR code containing the server's IP address to the camera.")
-    server_ip = get_server_ip()
+    server_ip = get_server_address()
     open_browser(server_ip)
 
 
-def get_server_ip():
+def get_server_address():
     while True:
         content = read_qr_code()
-        ip_matches = extract_ipv4(content)
-        if len(ip_matches) == 1 and is_valid_ipv4(ip_matches[0]):
-            print("Found valid IPv4:", ip_matches[0])
-            return ip_matches[0]
-        else:
-            print("QR code does not contain valid IPv4. Content was", content)
+        address_match = extract_server_address(content)
+        if address_match is not None:
+            return address_match
+        print("QR code does not contain valid server address. Content was", content)
 
 
 def enable_network_manager():
@@ -41,8 +39,11 @@ def enable_network_manager():
     time.sleep(3)
 
 
-def extract_ipv4(text):
-    return re.findall(IPV4_PATTERN, text)
+def extract_server_address(text):
+    prefix = text[0:len(ADDRESS_PREFIX)]
+    if prefix == ADDRESS_PREFIX:
+        return text[len(ADDRESS_PREFIX):]
+    return None
 
 
 def get_wifi_info_from_qr():
@@ -69,8 +70,21 @@ def parse_wifi_qr_content(content):
 
 
 def open_browser(server_ip):
-    print("open browser with url", server_ip)
-    subprocess.call(['sudo', '-u', 'admin', 'chromium-browser', server_ip, '--kiosk'])
+    while True:
+        if not url_is_reachable(server_ip):
+            time.sleep(3)
+        else:
+            print("Opening browser with", server_ip)
+            subprocess.call(['sudo', '-u', 'admin', 'chromium-browser', server_ip, '--kiosk'])
+            break
+
+
+def url_is_reachable(url):
+    try:
+        requests.get(url)
+        return True
+    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError):
+        return False
 
 
 def has_network_connection():

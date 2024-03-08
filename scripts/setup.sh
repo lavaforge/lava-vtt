@@ -55,13 +55,23 @@ apt-get install python3-opencv
 echo "Installing python libraries"
 pip install pyzbar
 pip install netifaces
+pip install requests
+
+# TODO: increase swap size
+   #39  sudo dphys-swapfile swapoff
+   #41  sudo nano /etc/dphys-swapfile ->> CONF_SWAPSIZE=1000
+   #42  sudo dphys-swapfile setup
+   #43  sudo dphys-swapfile swapon
+# TODO: set display resolution to maximum
+
+# TODO: dont switch of screen on inactivity
 
 
 echo "Creating lava directory"
 mkdir -p /lava
 cd /lava || exit
 
-if [ -f "qr_code.py" ]; then
+if [ -f "qr_code.py" ]; then # TODO: always replace python script!
     echo "Python script already exists"
 else
     echo "Python script does not exist. Downloading..."
