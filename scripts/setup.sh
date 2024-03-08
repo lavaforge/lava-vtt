@@ -6,20 +6,32 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# TODO: put script in autostart
 
 echo "Enabling legacy camera"
-if grep "start_x=1" /boot/config.txt
-then
-        exit
+if grep -q "start_x=1" /boot/config.txt; then
+    echo "start_x=1 is already set."
 else
+    if grep -q "start_x=0" /boot/config.txt; then
         sed -i "s/start_x=0/start_x=1/g" /boot/config.txt
-        reboot
+        echo "Changed start_x=0 to start_x=1."
+    else
+        echo "start_x=1" >> /boot/config.txt
+        echo "Added start_x=1."
+    fi
 fi
+
+if grep -q "gpu_mem=128" /boot/config.txt; then
+    echo "gpu_mem=128 is already set."
+else
+    echo "gpu_mem=128" >> /boot/config.txt
+    echo "Added gpu_mem=128."
+fi
+
 
 echo "Updating"
 apt-get update
 apt-get upgrade -y
+
 
 echo "Enabling SSH"
 systemctl enable ssh
@@ -31,9 +43,11 @@ echo "Installing OpenCV"
 apt-get install libopencv-dev -y
 apt-get install python3-opencv
 
+
 echo "Installing python libraries"
 pip install pyzbar
 pip install netifaces
+
 
 echo "Creating lava directory"
 mkdir -p /lava
@@ -47,5 +61,6 @@ else
     wget https://raw.githubusercontent.com/lavaforge/lava-vtt/raspberryScript/scripts/qr_code.py
 fi
 
-echo "Starting python script"
-python3 qr_code.py
+# TODO: put python script in autostart
+
+reboot
