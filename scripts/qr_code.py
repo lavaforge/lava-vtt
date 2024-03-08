@@ -69,7 +69,8 @@ def parse_wifi_qr_content(content):
 
 
 def open_browser(server_ip):
-    print("open browser with url", server_ip)  # TODO: implement
+    print("open browser with url", server_ip)
+    subprocess.call(['chromium-browser', server_ip, '--kiosk'])
 
 
 def has_network_connection():
