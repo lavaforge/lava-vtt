@@ -71,8 +71,7 @@ echo "Creating lava directory"
 mkdir -p /lava
 cd /lava || exit
 
-# TODO: replace with script url from main branch
-if wget -O qr_code.py https://raw.githubusercontent.com/lavaforge/lava-vtt/raspberryScript/scripts/qr_code.py; then
+if wget -O qr_code.py https://raw.githubusercontent.com/lavaforge/lava-vtt/main/scripts/qr_code.py; then
     echo "Download successful. Script updated or downloaded."
 else
     echo "Error downloading script. Please check your internet connection or the URL."
