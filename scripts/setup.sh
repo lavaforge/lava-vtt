@@ -71,12 +71,12 @@ echo "Creating lava directory"
 mkdir -p /lava
 cd /lava || exit
 
-if [ -f "qr_code.py" ]; then # TODO: always replace python script!
-    echo "Python script already exists"
+# TODO: replace with script url from main branch
+if wget -O qr_code.py https://raw.githubusercontent.com/lavaforge/lava-vtt/raspberryScript/scripts/qr_code.py; then
+    echo "Download successful. Script updated or downloaded."
 else
-    echo "Python script does not exist. Downloading..."
-    # TODO: replace with script from main branch
-    wget https://raw.githubusercontent.com/lavaforge/lava-vtt/raspberryScript/scripts/qr_code.py
+    echo "Error downloading script. Please check your internet connection or the URL."
+    exit 1
 fi
 
 
