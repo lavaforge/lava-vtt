@@ -10,7 +10,7 @@ import requests
 NO_QR = "no-qr"
 ADDRESS_PREFIX = "lava="
 
-# TODO: add overlay text to image view what is asked right now (wifi/ip)
+
 def main():
     if has_network_connection():
         print("Device has network connection.")
@@ -27,7 +27,7 @@ def main():
 
 def get_server_address():
     while True:
-        content = read_qr_code()
+        content = read_qr_code("Show Lava server address")
         address_match = extract_server_address(content)
         if address_match is not None:
             return address_match
@@ -48,7 +48,7 @@ def extract_server_address(text):
 
 def get_wifi_info_from_qr():
     while True:
-        content = read_qr_code()
+        content = read_qr_code("Show WIFI code")
         ssid, password = parse_wifi_qr_content(content)
         if ssid is not None and password is not None:
             print("Found valid wifi information.")
@@ -165,7 +165,19 @@ def scale_image_down(img):
     return cv2.resize(img, (int(img.shape[1] * 0.5), int(img.shape[0] * 0.5)), interpolation=cv2.INTER_AREA)
 
 
-def read_qr_code():
+def apply_info_text(info_text: str, img):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    thickness = 2
+    text_size = cv2.getTextSize(info_text, font, font_scale, thickness)[0]
+    text_x = (img.shape[1] - text_size[0]) // 2
+    text_y = img.shape[0] - thickness * 10
+    rectangle_bgr = (text_x - thickness * 5, text_y - text_size[1] - thickness * 5, text_x + text_size[0] + thickness * 5, text_y + thickness * 5)
+    cv2.rectangle(img, (rectangle_bgr[0], rectangle_bgr[1]), (rectangle_bgr[2], rectangle_bgr[3]), (0, 0, 0), -1)
+    cv2.putText(img, info_text, (text_x, text_y), font, font_scale, (255, 255, 255), thickness)
+
+
+def read_qr_code(info_text: str = "Scanning..."):
     cap = cv2.VideoCapture(0)
     while True:
         _, img = cap.read()
@@ -175,6 +187,8 @@ def read_qr_code():
         result = decode_qr_from_image(img)
         if result != NO_QR:
             break
+
+        apply_info_text(info_text, img)
 
         cv2.imshow("Image", img)
         if cv2.waitKey(1) == ord("q"):
