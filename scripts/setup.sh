@@ -50,7 +50,6 @@ raspi-config nonint do_vnc 0
 echo "Installing OpenCV"
 apt-get install libopencv-dev -y
 apt-get install python3-opencv
-apt-get install screen -y
 
 
 echo "Installing python libraries"
@@ -80,17 +79,26 @@ else
 fi
 
 
-AUTOSTART_PATH="/etc/xdg/lxsession/LXDE-pi/autostart"
-PYTHON_STARTER="screen -dmS qr_code_session sudo python3 /lava/qr_code.py"
-if [ -f "$AUTOSTART_PATH" ]; then
-    if ! grep -Fxq "$PYTHON_STARTER" "$AUTOSTART_PATH"; then
-        echo "$PYTHON_STARTER" | sudo tee -a "$AUTOSTART_PATH" > /dev/null
-        echo "Line added to the file."
-    else
-        echo "Line already exists in the file."
-    fi
-else
-    echo "File does not exist."
-fi
+SERVICE_FILE="/etc/systemd/system/qr_code.service"
+
+echo "[Unit]
+Description=QR Code Start Script
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /lava/qr_code.py
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target" > "$SERVICE_FILE"
+
+systemctl daemon-reload
+systemctl enable qr_code.service
+systemctl start qr_code.service
+
+echo "Systemd service qr_code.service has been created and started."
 
 reboot
