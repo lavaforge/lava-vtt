@@ -91,7 +91,7 @@ Wants=network-online.target NetworkManager-wait-online.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /lava/qr_code.py
+ExecStart=DISPLAY=:0 /usr/bin/python3 /lava/qr_code.py
 Restart=on-failure
 User=root
 
