@@ -50,6 +50,7 @@ raspi-config nonint do_vnc 0
 echo "Installing OpenCV"
 apt-get install libopencv-dev -y
 apt-get install python3-opencv
+apt-get install screen -y
 
 
 echo "Installing python libraries"
@@ -80,7 +81,7 @@ fi
 
 
 AUTOSTART_PATH="/etc/xdg/lxsession/LXDE-pi/autostart"
-PYTHON_STARTER="sudo python3 /lava/qr_code.py"
+PYTHON_STARTER="screen -dmS qr_code_session sudo python3 /lava/qr_code.py"
 if [ -f "$AUTOSTART_PATH" ]; then
     if ! grep -Fxq "$PYTHON_STARTER" "$AUTOSTART_PATH"; then
         echo "$PYTHON_STARTER" | sudo tee -a "$AUTOSTART_PATH" > /dev/null
