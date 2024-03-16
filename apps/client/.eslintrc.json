@@ -11,7 +11,7 @@
     {
       "files": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.vue"],
       "parserOptions": {
-        "project": ["apps/client/tsconfig.*?.json"]
+        "project": ["apps/client/tsconfig.json"]
       },
       "rules": {
         "vue/multi-word-component-names": "off"

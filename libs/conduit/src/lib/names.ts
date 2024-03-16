@@ -1,7 +1,7 @@
 import {
   adjectives,
   colors,
-  Config,
+  type Config,
   uniqueNamesGenerator,
 } from '@joaomoreno/unique-names-generator';
 
@@ -125,7 +125,7 @@ const nameConfig: Config = {
 export type LavaName = `${string}-${string}-${string}`;
 
 const generatedNames = new Set<string>();
-export function uniqueClientName(): LavaName {
+export function uniqueLavaName(): LavaName {
   let name: string;
   do {
     name = uniqueNamesGenerator(nameConfig);
@@ -133,4 +133,8 @@ export function uniqueClientName(): LavaName {
 
   generatedNames.add(name);
   return name as LavaName;
+}
+
+export function unregisterName(name: LavaName): void {
+  generatedNames.delete(name);
 }

@@ -5,6 +5,7 @@ import { MongoClient } from 'mongodb';
 import { apiRouter } from './routes/api.route';
 import { scg, ServiceContainer } from 'ioc-service-container';
 import { FowService } from './services/fow.service';
+import { BackendConduit } from './conduit';
 
 const port = process.env.PORT || 3000;
 
@@ -35,28 +36,20 @@ const io = new Server(httpServer, {
   },
 });
 
+const conduit = new BackendConduit(io);
+
+conduit.attune('ping', (lore, respond) => {
+  console.log('ping', lore.msg);
+  return respond({ msg: 'pong' });
+});
+
 const fogOfWars = {};
 let currentImage = '';
-
-io.on('connection', (socket) => {
-  console.log('A user connected');
-  console.log(fogOfWars, currentImage);
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
-  });
-
-  socket.on('new-fow', (msg) => {
-    console.log('new fow', msg);
-    const fowService = scg('FowService');
-    void fowService.setFow(currentImage, msg);
-    io.emit('fow-broadcast', msg);
-  });
-});
 
 function newDisplayedImage(hash: string) {
   currentImage = hash;
   console.log('new image on server', hash);
-  io.emit('new-image', hash);
+  // io.emit('new-image', hash);
 }
 
 ServiceContainer.set('newDisplayedImage', () => newDisplayedImage);
