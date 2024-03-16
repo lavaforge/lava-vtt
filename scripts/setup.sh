@@ -97,7 +97,7 @@ Restart=on-failure
 User=root
 
 [Install]
-WantedBy=graphical-session.target" > "$SERVICE_FILE"
+WantedBy=graphical.target" > "$SERVICE_FILE"
 
 
 systemctl daemon-reload
