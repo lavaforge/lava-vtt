@@ -167,7 +167,7 @@ def scale_image_down(img):
 
 def apply_info_text(info_text: str, img):
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 1
+    font_scale = 0.6
     thickness = 2
     text_size = cv2.getTextSize(info_text, font, font_scale, thickness)[0]
     text_x = (img.shape[1] - text_size[0]) // 2
