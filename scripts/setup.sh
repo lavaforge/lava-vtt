@@ -90,14 +90,15 @@ After=network-online.target NetworkManager-wait-online.service
 Wants=network-online.target NetworkManager-wait-online.service
 
 [Service]
-Type=simple
+Type=exec
 Environment='DISPLAY=:0'
 ExecStart=/usr/bin/python3 /lava/qr_code.py
 Restart=on-failure
 User=root
 
 [Install]
-WantedBy=multi-user.target" > "$SERVICE_FILE"
+WantedBy=graphical-session.target" > "$SERVICE_FILE"
+
 
 systemctl daemon-reload
 systemctl enable qr_code.service
