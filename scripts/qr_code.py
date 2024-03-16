@@ -9,9 +9,11 @@ import requests
 
 NO_QR = "no-qr"
 ADDRESS_PREFIX = "lava="
+STARTUP_WAIT_TIME = 15
 
 
 def main():
+    time.sleep(STARTUP_WAIT_TIME)
     if has_network_connection():
         print("Device has network connection.")
     else:

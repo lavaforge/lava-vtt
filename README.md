@@ -23,3 +23,9 @@ nx serve server
 ```
 
 Afterward, the app is reachable at `http://localhost:3000`.
+
+## Installing the Raspberry Pi client
+
+```
+curl -s https://raw.githubusercontent.com/lavaforge/lava-vtt/main/scripts/setup.sh | sudo bash
+```
