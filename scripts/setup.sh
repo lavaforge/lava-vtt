@@ -79,12 +79,15 @@ else
 fi
 
 
-SERVICE_FILE="/etc/systemd/system/qr_code.service"
+echo "Enabling NetworkManager-wait-online.service to wait for the network to be online"
+systemctl enable NetworkManager-wait-online.service
 
+
+SERVICE_FILE="/etc/systemd/system/qr_code.service"
 echo "[Unit]
 Description=QR Code Start Script
-After=network-online.target
-Wants=network-online.target
+After=network-online.target NetworkManager-wait-online.service
+Wants=network-online.target NetworkManager-wait-online.service
 
 [Service]
 Type=simple
