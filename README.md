@@ -5,7 +5,7 @@ A virtual table-top, that is first and foremost designed to be:
 - used for non-virtual or in-person play, to enhance the playing experience of your favourite TTRPG.
 - integrated closely with obsidian.md, since that is, what we are using for DMing.
 
-## Running the app
+## Running the App
 
 Installing dependencies
 
@@ -23,6 +23,16 @@ nx serve server
 ```
 
 Afterward, the app is reachable at `http://localhost:3000`.
+
+---
+
+## Obsidian Plugin
+
+Compiling the plugin
+
+```bash
+nx run obsidian-lava-vtt-adapter:dev
+```
 
 ---
 
