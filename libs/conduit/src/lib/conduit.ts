@@ -1,39 +1,16 @@
 import { z } from 'zod';
 import { type LavaName } from './names';
 import { uniqueId } from 'lodash-es';
+import { veins, Veins } from './veins';
 
-const paintSchema = z.object({
-  loc: z.object({
-    x: z.number(),
-    y: z.number(),
-  }),
-  type: z.string(),
-});
-
-const veins = {
-  getCanvas: {
-    loreSchema: z.object({ size: z.number() }),
-    responseSchema: z.object({ canvas: z.string() }),
-  },
-  hello: { loreSchema: z.object({ name: z.string() }) },
-  paint: { loreSchema: paintSchema },
-  ping: {
-    loreSchema: z.object({ msg: z.string() }),
-    responseSchema: z.object({ msg: z.string() }),
-  },
-} as const satisfies Record<
-  string,
-  | { loreSchema: z.ZodSchema }
-  | { loreSchema: z.ZodSchema; responseSchema: z.ZodSchema }
+export type HasResponse = { responseSchema: z.ZodSchema };
+export type LoreSchema<V extends Veins> = z.infer<
+  (typeof veins)[V]['loreSchema']
 >;
-
-type Veins = keyof typeof veins;
-
-type HasResponse = { responseSchema: z.ZodSchema };
-type LoreSchema<V extends Veins> = z.infer<(typeof veins)[V]['loreSchema']>;
-type ResponseSchema<V extends Veins> = (typeof veins)[V] extends HasResponse
-  ? z.infer<(typeof veins)[V]['responseSchema']>
-  : never;
+export type ResponseSchema<V extends Veins> =
+  (typeof veins)[V] extends HasResponse
+    ? z.infer<(typeof veins)[V]['responseSchema']>
+    : never;
 
 const zodLavaName = z.custom<LavaName>(
   (val) => typeof val === 'string' && /^[a-z]+-[a-z]+-[a-z]+$/.test(val),
