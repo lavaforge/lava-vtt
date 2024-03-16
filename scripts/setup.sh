@@ -92,6 +92,7 @@ Wants=network-online.target NetworkManager-wait-online.service
 [Service]
 Type=exec
 Environment='DISPLAY=:0'
+Environment='XAUTHORITY=/home/admin/.Xauthority'
 ExecStart=/usr/bin/python3 /lava/qr_code.py
 Restart=on-failure
 User=root
