@@ -9,7 +9,7 @@ import requests
 
 NO_QR = "no-qr"
 ADDRESS_PREFIX = "lava="
-STARTUP_WAIT_TIME = 60
+STARTUP_WAIT_TIME = 10
 
 
 def main():
