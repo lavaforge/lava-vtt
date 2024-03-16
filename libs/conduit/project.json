@@ -1,0 +1,8 @@
+{
+  "name": "conduit",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/conduit/src",
+  "projectType": "library",
+  "targets": {},
+  "tags": []
+}
