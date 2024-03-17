@@ -1,40 +1,46 @@
-import { z } from 'zod';
 import { type LavaName } from './names';
 import { uniqueId } from 'lodash-es';
 import { veins, Veins } from './veins';
-
-export type HasResponse = { responseSchema: z.ZodSchema };
-export type LoreSchema<V extends Veins> = z.infer<
-  (typeof veins)[V]['loreSchema']
->;
-export type ResponseSchema<V extends Veins> =
-  (typeof veins)[V] extends HasResponse
-    ? z.infer<(typeof veins)[V]['responseSchema']>
-    : never;
-
-const zodLavaName = z.custom<LavaName>(
-  (val) => typeof val === 'string' && /^[a-z]+-[a-z]+-[a-z]+$/.test(val),
-);
-const zodVeins = z.custom<Veins>(
-  (val) => typeof val === 'string' && val in veins,
-);
-
-const zodGlyph = z.object({
-  from: z.literal('nexus').or(zodLavaName),
-  lore: z.unknown(),
-  msgNum: z.string(),
-  target: z.union([z.literal('broadcast'), z.literal('nexus'), zodLavaName]),
-  vein: z.string(),
-});
-
-const helloMsg = z.object({ name: zodLavaName });
-
-export type Glyph = z.infer<typeof zodGlyph>;
+import {
+  Glyph,
+  HasResponse,
+  LoreSchema,
+  ResponseSchema,
+  zodGlyph,
+  zodNameExchange,
+  zodVeins,
+} from './types';
+import { fromZodError } from 'zod-validation-error';
 
 export abstract class Conduit {
-  protected _name: 'nexus' | LavaName | undefined = undefined;
+  /**
+   * Delay after which a response is considered timed out
+   */
   protected static readonly RESPONSE_TIMEOUT = 10000;
 
+  /**
+   * Handlers that are currently waiting for a response
+   */
+  protected responseHandlers = new Set<(glyph: Glyph) => boolean>();
+
+  /**
+   * Handlers that were attuned to a vein
+   */
+  protected veinHandlers = new Map<
+    Veins,
+    Set<(glyph: Glyph) => Promise<void>>
+  >();
+
+  /**
+   * The name by which this client of the conduit is known
+   *
+   * The special name 'nexus' is reserved for the backend of lava
+   */
+  protected _name: 'nexus' | LavaName | undefined = undefined;
+
+  /**
+   * The name by which this client of the conduit is known
+   */
   get name(): 'nexus' | LavaName {
     if (this._name === undefined) {
       throw new Error('Conduit is not initialized yet');
@@ -43,37 +49,41 @@ export abstract class Conduit {
     return this._name;
   }
 
-  dispatch<
-    Vein extends Veins,
-    R = (typeof veins)[Vein] extends HasResponse ? never : void,
-  >(vein: Vein, lore: LoreSchema<Vein>): Promise<R> {
+  /**
+   * Send a glyph via the conduit
+   */
+  protected abstract sendGlyph(glyph: Glyph): Promise<void>;
+
+  /**
+   * Initialize the conduit
+   */
+  protected abstract initializeConnection(): void;
+
+  /**
+   * Broadcast a glyph to all participants
+   */
+  async broadcast<Vein extends Veins>(
+    vein: Vein,
+    lore: LoreSchema<Vein>,
+  ): Promise<(typeof veins)[Vein] extends HasResponse ? never : void> {
     if ('responseSchema' in veins[vein]) {
       throw new Error(
         `Cannot broadcast to a vein (${vein}) which expects a response!`,
       );
     }
 
-    const loreSchema = veins[vein].loreSchema;
-    if (!loreSchema.safeParse(lore).success) {
-      // TODO: output actual zod error
-      return Promise.reject(new Error('Invalid lore'));
+    const parseResult = veins[vein].loreSchema.safeParse(lore);
+    if (!parseResult.success) {
+      throw fromZodError(parseResult.error);
     }
 
-    this.ensureInitialization();
-    const glyph: Glyph = {
-      from: this._name,
-      lore,
-      msgNum: uniqueId(`${this._name}_${vein}`),
-      target: 'broadcast',
-      vein,
-    };
+    await this.sendGlyph(this.createGlyph(vein, lore, 'broadcast'));
 
-    return this.sendGlyph(glyph).then(() => undefined as R);
+    // needed because typescript can't infer whether to use never or void
+    return undefined as unknown;
   }
 
-  protected responseHandlers = new Set<(glyph: Glyph) => boolean>();
-
-  invoke<Vein extends Veins>(
+  async invoke<Vein extends Veins>(
     vein: Vein,
     target: 'nexus' | LavaName,
     lore: LoreSchema<Vein>,
@@ -81,63 +91,32 @@ export abstract class Conduit {
     (typeof veins)[Vein] extends HasResponse ? ResponseSchema<Vein> : void
   > {
     const veinDefinition = veins[vein];
-    const loreSchema = veinDefinition.loreSchema;
-    if (!loreSchema.safeParse(lore).success) {
-      // TODO: output actual zod error
-      return Promise.reject(new Error('Invalid lore'));
+
+    const parseResult = veinDefinition.loreSchema.safeParse(lore);
+    if (!parseResult.success) {
+      throw fromZodError(parseResult.error);
     }
 
-    this.ensureInitialization();
-    const glyph: Glyph = {
-      from: this._name,
-      lore,
-      msgNum: uniqueId(`${this._name}_${vein}`),
-      target,
-      vein,
-    };
+    const glyph = this.createGlyph(vein, lore, target);
 
     if (!('responseSchema' in veinDefinition)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return this.sendGlyph(glyph).then(() => undefined as any);
+      await this.sendGlyph(glyph);
+
+      // needed because typescript can't infer if the return type is response or void
+      return undefined as unknown;
     }
 
-    let responseHandler: (glyph: Glyph) => boolean;
-    const responseLore = new Promise<unknown>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.responseHandlers.delete(responseHandler);
-        reject(new Error('Response timeout'));
-      }, Conduit.RESPONSE_TIMEOUT);
-
-      responseHandler = (response: Glyph) => {
-        if (
-          response.vein == `RESPONSE:${glyph.vein}` &&
-          response.msgNum === glyph.msgNum
-        ) {
-          clearTimeout(timeout);
-          this.responseHandlers.delete(responseHandler);
-          resolve(response.lore);
-          return true;
-        }
-        return false;
-      };
-
-      this.responseHandlers.add(responseHandler);
-    });
-
-    this.sendGlyph(glyph).catch((err) => {
-      this.responseHandlers.delete(responseHandler);
-      throw err;
-    });
+    const { unregisterHandler, promise: responsePromise } =
+      this.initResponseHandler(glyph);
 
     const responseSchema = veinDefinition.responseSchema;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return responseLore.then((lore) => responseSchema.parse(lore) as any);
+    try {
+      await this.sendGlyph(glyph);
+      return responseSchema.parse(await responsePromise);
+    } finally {
+      unregisterHandler();
+    }
   }
-
-  protected veinHandlers = new Map<
-    Veins,
-    Set<(glyph: Glyph) => Promise<void>>
-  >();
 
   attune<Vein extends Veins>(
     vein: Vein,
@@ -147,7 +126,9 @@ export abstract class Conduit {
           respond: (lore: ResponseSchema<Vein>) => Promise<void>,
         ) => Promise<void> | void
       : (lore: LoreSchema<Vein>) => Promise<void> | void,
-  ): { detune: () => void } {
+  ): {
+    detune: () => void;
+  } {
     if (!this.veinHandlers.has(vein)) {
       this.veinHandlers.set(vein, new Set());
     }
@@ -180,22 +161,70 @@ export abstract class Conduit {
       });
     };
     this.veinHandlers.get(vein)?.add(handler);
+
     return { detune: () => this.veinHandlers.get(vein)?.delete(handler) };
   }
 
-  protected abstract sendGlyph(glyph: Glyph): Promise<void>;
-  protected abstract initializeConnection(): void;
+  protected createGlyph<Vein extends Veins>(
+    vein: Vein,
+    lore: unknown,
+    target: LavaName | 'nexus' | 'broadcast',
+  ): Glyph {
+    this.ensureInitialization();
+    return {
+      from: this._name,
+      lore,
+      msgNum: uniqueId(`${this._name}_${vein}`),
+      target,
+      vein,
+    };
+  }
 
-  protected newGlyphReceived(
-    glyph: unknown,
-  ):
+  protected initResponseHandler(glyph: Glyph): {
+    promise: Promise<unknown>;
+    unregisterHandler: () => void;
+  } {
+    let responseHandler: (glyph: Glyph) => boolean;
+
+    const promise = new Promise<unknown>((resolve, reject) => {
+      const responseTimeout = setTimeout(() => {
+        this.responseHandlers.delete(responseHandler);
+        reject(new Error('Response timeout'));
+      }, Conduit.RESPONSE_TIMEOUT);
+
+      responseHandler = (response: Glyph) => {
+        const isCorrectResponse =
+          response.vein == `RESPONSE:${glyph.vein}` &&
+          response.msgNum === glyph.msgNum;
+
+        if (isCorrectResponse) {
+          clearTimeout(responseTimeout);
+
+          this.responseHandlers.delete(responseHandler);
+          resolve(response.lore);
+
+          return true;
+        }
+        return false;
+      };
+    });
+
+    return {
+      promise,
+      unregisterHandler: () => this.responseHandlers.delete(responseHandler),
+    };
+  }
+
+  protected newGlyphReceived(glyph: unknown):
     | { status: 'forward'; to: LavaName | 'nexus' }
     | { status: 'done' }
-    | { status: 'broadcast' } {
+    | {
+        status: 'broadcast';
+      } {
     console.log('newGlyphReceived', glyph);
 
     if (this._name === undefined) {
-      const parsed = helloMsg.safeParse(glyph);
+      const parsed = zodNameExchange.safeParse(glyph);
       if (parsed.success) {
         this._name = parsed.data.name;
         console.log('Conduit initialized with name', this._name);

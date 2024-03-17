@@ -24,7 +24,8 @@
     "socket.io-client": "^4.7.4",
     "tslib": "^2.3.0",
     "vue": "^3.3.11",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zod-validation-error": "^3.0.3"
   },
   "devDependencies": {
     "@nx/esbuild": "18.0.4",

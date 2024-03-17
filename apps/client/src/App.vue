@@ -22,7 +22,7 @@ async function sendPing() {
 }
 
 async function sayHello() {
-  await conduit.dispatch('hello', { name: conduit.name });
+  await conduit.broadcast('hello', { name: conduit.name });
 }
 
 const whoSaidHello = ref('');
