@@ -4,6 +4,7 @@ import {
   type Config,
   uniqueNamesGenerator,
 } from '@joaomoreno/unique-names-generator';
+import { z } from 'zod';
 
 const lavaNouns: string[] = [
   'magma',
@@ -122,6 +123,9 @@ const nameConfig: Config = {
   style: 'lowerCase',
 };
 
+export const zodLavaName = z.custom<LavaName>(
+  (val) => typeof val === 'string' && /^[a-z]+-[a-z]+-[a-z]+$/.test(val),
+);
 export type LavaName = `${string}-${string}-${string}`;
 
 const generatedNames = new Set<string>();

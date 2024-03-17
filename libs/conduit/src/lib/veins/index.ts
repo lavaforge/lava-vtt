@@ -4,6 +4,9 @@ import { ping } from './schemas/ping';
 import { paint } from './schemas/paint';
 import { getCanvas } from './schemas/getCanvas';
 
+/**
+ * The available veins to send glyphs through
+ */
 export const veins = {
   getCanvas,
   hello,
