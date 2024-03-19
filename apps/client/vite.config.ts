@@ -14,7 +14,7 @@ export default defineConfig({
 
   preview: {
     port: 4300,
-    host: 'localhost',
+    host: true,
   },
 
   plugins: [vue(), nxViteTsPaths()],
@@ -30,6 +30,7 @@ export default defineConfig({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    emptyOutDir: true,
   },
 
   test: {

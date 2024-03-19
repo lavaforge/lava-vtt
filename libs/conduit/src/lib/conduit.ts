@@ -1,11 +1,11 @@
 import { type LavaName } from './names';
 import { uniqueId } from 'lodash-es';
-import { veins, Veins } from './veins';
+import { veins, type Veins } from './veins';
 import {
-  Glyph,
-  HasResponse,
-  LoreSchema,
-  ResponseSchema,
+  type Glyph,
+  type HasResponse,
+  type LoreSchema,
+  type ResponseSchema,
   zodGlyph,
   zodNameExchange,
   zodVeins,
@@ -80,7 +80,7 @@ export abstract class Conduit {
     await this.sendGlyph(this.createGlyph(vein, lore, 'broadcast'));
 
     // needed because typescript can't infer whether to use never or void
-    return undefined as unknown;
+    return undefined as never;
   }
 
   async invoke<Vein extends Veins>(
@@ -103,7 +103,7 @@ export abstract class Conduit {
       await this.sendGlyph(glyph);
 
       // needed because typescript can't infer if the return type is response or void
-      return undefined as unknown;
+      return undefined as never;
     }
 
     const { unregisterHandler, promise: responsePromise } =
@@ -112,7 +112,7 @@ export abstract class Conduit {
     const responseSchema = veinDefinition.responseSchema;
     try {
       await this.sendGlyph(glyph);
-      return responseSchema.parse(await responsePromise);
+      return responseSchema.parse(await responsePromise) as never;
     } finally {
       unregisterHandler();
     }

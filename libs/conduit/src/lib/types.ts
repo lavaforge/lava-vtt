@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { veins, Veins } from './veins';
+import { veins, type Veins } from './veins';
 import { zodLavaName } from './names';
 
 /**
