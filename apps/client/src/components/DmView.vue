@@ -40,7 +40,7 @@ useEventListener(imageRef, 'load', async () => {
     mapStore.setFow(data);
   }));
 
-  fow.setData(fowData.value ?? []);
+  if (fowData.value) fow.setData(fowData.value);
   // setTimeout needed because otherwise the canvas is not being updated
   setTimeout(() => fow?.update(true));
 });
