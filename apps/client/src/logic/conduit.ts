@@ -21,7 +21,7 @@ export class FrontendConduit extends Conduit {
   }
 
   protected sendGlyph(glyph: Glyph): Promise<void> {
-    this.socket.volatile.emit('glyph', glyph);
+    this.socket.emit('glyph', glyph);
     return Promise.resolve();
   }
 }

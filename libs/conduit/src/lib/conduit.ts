@@ -16,7 +16,7 @@ export abstract class Conduit {
   /**
    * Delay after which a response is considered timed out
    */
-  protected static readonly RESPONSE_TIMEOUT = 10000;
+  protected static readonly RESPONSE_TIMEOUT = 5000;
 
   /**
    * Handlers that are currently waiting for a response
@@ -189,7 +189,7 @@ export abstract class Conduit {
     const promise = new Promise<unknown>((resolve, reject) => {
       const responseTimeout = setTimeout(() => {
         this.responseHandlers.delete(responseHandler);
-        reject(new Error('Response timeout'));
+        reject(new Error(`Response timeout: ${glyph.vein}`));
       }, Conduit.RESPONSE_TIMEOUT);
 
       responseHandler = (response: Glyph) => {
@@ -217,6 +217,14 @@ export abstract class Conduit {
     };
   }
 
+  /**
+   * This method must be called in the implementation of initializeConnection
+   *
+   * It handles:
+   * - initially setting the name of the conduit
+   * - checking whether a glyph needs to be forwarded
+   * - calling the appropriate handlers for a received glyph
+   */
   protected newGlyphReceived(glyph: unknown):
     | { status: 'forward'; to: LavaName | 'nexus' }
     | { status: 'done' }
@@ -261,7 +269,7 @@ export abstract class Conduit {
           return { status: 'done' };
         }
       }
-      console.warn('Received a response glyph without a handler');
+      console.warn(`Received a response glyph without a handler: ${glyph}`);
       return { status: 'done' };
     }
 

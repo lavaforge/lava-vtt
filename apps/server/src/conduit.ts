@@ -57,6 +57,7 @@ export class BackendConduit extends Conduit {
 
       socket.on('glyph', (glyph: unknown) => {
         const result = this.newGlyphReceived(glyph);
+
         if (result.status === 'forward' && result.to !== 'nexus') {
           this.connections.get(result.to)?.emit('glyph', glyph);
         } else if (result.status === 'broadcast') {
