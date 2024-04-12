@@ -8,7 +8,7 @@ export class FowService {
     const collection = this.db.collection('fow');
     await collection.updateOne(
       { hash },
-      { $set: { hash, fow } },
+      { $set: { fow, hash } },
       { upsert: true },
     );
   }
@@ -16,6 +16,6 @@ export class FowService {
   async getFow(hash: string): Promise<number[] | null> {
     const collection = this.db.collection('fow');
     const fow = await collection.findOne({ hash });
-    return fow?.fow;
+    return fow?.fow ?? null;
   }
 }

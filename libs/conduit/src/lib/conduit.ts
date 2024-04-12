@@ -207,6 +207,8 @@ export abstract class Conduit {
         }
         return false;
       };
+
+      this.responseHandlers.add(responseHandler);
     });
 
     return {
@@ -221,8 +223,6 @@ export abstract class Conduit {
     | {
         status: 'broadcast';
       } {
-    console.log('newGlyphReceived', glyph);
-
     if (this._name === undefined) {
       const parsed = zodNameExchange.safeParse(glyph);
       if (parsed.success) {

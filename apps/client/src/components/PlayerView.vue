@@ -1,14 +1,12 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { ref, watch } from 'vue';
 import panzoom from 'panzoom';
 import { useEventListener } from '@vueuse/core';
-import { useSocket } from '../logic/useSocket';
 import { FogOfWar } from '../logic/FogOfWar';
-import { scg } from 'ioc-service-container';
+import { storeToRefs } from 'pinia';
+import { useMapStore } from '../logic/useMapStore';
 
-const apiUrl = scg('apiUrl');
-const hash = ref('');
-const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
+const { imagePath, fowData } = storeToRefs(useMapStore());
 
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
@@ -59,7 +57,6 @@ useEventListener(imageRef, 'load', async () => {
   if (!imageRef.value || !canvasRef.value) {
     throw new Error('no image or canvas');
   }
-  emit('loaded');
 
   height.value = imageRef.value.naturalHeight;
   width.value = imageRef.value.naturalWidth;
@@ -71,32 +68,14 @@ useEventListener(imageRef, 'load', async () => {
   }
 
   fow = new FogOfWar(ctx, width.value, height.value, false);
-  fow.update();
-
-  await fetch(`${apiUrl}/api/fow/${hash.value}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (data) {
-        fow?.setData(data);
-        fow?.update();
-      }
-    });
+  fow.setData(fowData.value ?? []);
+  // setTimeout needed because otherwise the canvas is not being updated
+  setTimeout(() => fow?.update());
 });
 
-const { emit } = useSocket({
-  event: 'fow-broadcast',
-  callback: (data) => {
-    fow?.setData(data);
-    fow?.update();
-  },
-});
-
-useSocket({
-  event: 'new-image',
-  callback: (newHash) => {
-    console.log('new image', newHash);
-    hash.value = newHash;
-  },
+watch(fowData, (data) => {
+  fow?.setData(data ?? []);
+  fow?.update();
 });
 
 const width = ref(0);
@@ -107,7 +86,7 @@ const containerRef = ref<HTMLDivElement | null>(null);
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
-    <template v-if="hash">
+    <template v-if="imagePath">
       <img ref="imageRef" :src="imagePath" />
       <canvas ref="canvasRef" :height="height" :width="width" />
     </template>

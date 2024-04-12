@@ -6,6 +6,7 @@ import {
   unregisterName,
 } from 'conduit';
 import { Server, Socket } from 'socket.io';
+import { scg } from 'ioc-service-container';
 
 export class BackendConduit extends Conduit {
   private readonly connections = new Map<LavaName, Socket>();
@@ -16,7 +17,6 @@ export class BackendConduit extends Conduit {
   }
 
   protected sendGlyph(glyph: Glyph): Promise<void> {
-    console.log('send glyph', glyph);
     const target = glyph.target;
 
     if (target === 'broadcast') {
@@ -41,6 +41,13 @@ export class BackendConduit extends Conduit {
 
       this.connections.set(name, socket);
       socket.emit('glyph', { name });
+
+      setTimeout(() => {
+        const displayStore = scg('DisplayStore');
+
+        const hash = displayStore.currentHash ?? '';
+        void this.invoke('imageHash', name, { hash });
+      });
 
       socket.on('disconnect', () => {
         this.connections.delete(name);

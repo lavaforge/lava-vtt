@@ -146,12 +146,6 @@ export class FogOfWar {
     }
 
     if (!noNotify) {
-      console.log(
-        'internal notify',
-        this.width,
-        this.height,
-        this.updateListeners,
-      );
       this.updateListeners.forEach((listener) => listener(this.data));
     }
   }
