@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia';
 import { computed, ref, shallowReadonly, watch } from 'vue';
 import { scg } from 'ioc-service-container';
+import type { LoreSchema } from 'conduit';
 
 export const useMapStore = defineStore('map', () => {
     const conduit = scg('conduit');
     const apiUrl = scg('apiUrl');
 
     const currentHash = ref<string>();
-    const currentFowData = ref<number[]>();
+    const currentFowData = ref<LoreSchema<'paperFow'>>();
 
     conduit.attune('imageHash', async (lore) => {
         const newHash = lore.hash;
@@ -17,30 +18,21 @@ export const useMapStore = defineStore('map', () => {
             return;
         }
 
-        const newFow = (
-            await conduit.invoke('requestFow', 'nexus', { hash: newHash })
-        ).fow;
-
-        currentFowData.value = newFow ?? undefined;
+        currentFowData.value = undefined;
         currentHash.value = newHash;
     });
 
-    conduit.attune('fowUpdate', (lore) => {
-        if (lore.hash !== currentHash.value) return;
-        currentFowData.value = lore.fow;
+    conduit.attune('paperFow', (lore) => {
+        currentFowData.value = lore;
     });
 
     const imagePath = computed(() =>
         currentHash.value ? `${apiUrl}/api/image/${currentHash.value}` : '',
     );
 
-    function setFow(fowData: number[]) {
-        if (!currentHash.value) return;
+    function setFow(fowData: LoreSchema<'paperFow'>) {
         currentFowData.value = fowData;
-        conduit.broadcast('fowUpdate', {
-            hash: currentHash.value,
-            fow: fowData,
-        });
+        conduit.broadcast('paperFow', fowData);
     }
 
     return { imagePath, fowData: shallowReadonly(currentFowData), setFow };

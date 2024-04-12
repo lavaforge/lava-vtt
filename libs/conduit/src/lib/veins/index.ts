@@ -2,6 +2,7 @@ import { type ZodSchema } from 'zod';
 import { imageHash } from './schemas/imageHash';
 import { requestFow } from './schemas/requestFow';
 import { fowUpdate } from './schemas/fowUpdate';
+import { paperFow } from './schemas/paperFow';
 
 /**
  * The available veins to send glyphs through
@@ -9,6 +10,7 @@ import { fowUpdate } from './schemas/fowUpdate';
 export const veins = {
     fowUpdate,
     imageHash,
+    paperFow,
     requestFow,
 } as const satisfies VeinDefinition;
 

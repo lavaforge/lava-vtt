@@ -1,14 +1,29 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick, type Ref } from 'vue';
 import panzoom from 'panzoom';
 import { useEventListener, useWakeLock } from '@vueuse/core';
-import { FogOfWar } from '../logic/FogOfWar';
 import { storeToRefs } from 'pinia';
 import { useMapStore } from '../logic/useMapStore';
+import paper from 'paper';
+import type { LoreSchema } from 'conduit';
 
 const { imagePath, fowData } = storeToRefs(useMapStore());
-const { request, release } = useWakeLock();
 
+const imageRef = ref<HTMLImageElement | null>(null);
+let instance: ReturnType<typeof panzoom> | null = null;
+const canvasRef = ref<HTMLCanvasElement | null>(null);
+const someText = ref('');
+const width = ref(0);
+const height = ref(0);
+const containerRef = ref<HTMLDivElement | null>(null);
+
+function initPaper() {
+    if (canvasRef.value) {
+        paper.setup(canvasRef.value);
+    }
+}
+
+const { request, release } = useWakeLock();
 async function toggleFullscreen() {
     if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen?.();
@@ -19,9 +34,6 @@ async function toggleFullscreen() {
     }
 }
 
-const imageRef = ref<HTMLImageElement | null>(null);
-
-let instance: ReturnType<typeof panzoom> | null = null;
 const resetZoom = () => {
     instance?.dispose();
 
@@ -52,46 +64,92 @@ const resetZoom = () => {
     });
 };
 
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-
-let fow: FogOfWar | null = null;
-
 useEventListener(imageRef, 'load', async () => {
+    void initCanvas(imageRef);
+});
+
+async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
     if (!imageRef.value || !canvasRef.value) {
         throw new Error('no image or canvas');
     }
-
-    height.value = imageRef.value.naturalHeight;
-    width.value = imageRef.value.naturalWidth;
+    height.value = imageRef.value.height;
+    width.value = imageRef.value.width;
     resetZoom();
-
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) {
         throw new Error('no context');
     }
+    await nextTick();
+    initPaper();
+}
 
-    fow = new FogOfWar(ctx, width.value, height.value, false);
-    fow.setData(fowData.value ?? []);
-    // setTimeout needed because otherwise the canvas is not being updated
-    setTimeout(() => fow?.update());
+useEventListener('resize', () => {
+    initCanvas(imageRef);
 });
 
-watch(fowData, (data) => {
-    fow?.setData(data ?? []);
-    fow?.update();
+watch(fowData, (newFowData) => {
+    if (newFowData) {
+        updateFOW(newFowData);
+    }
 });
 
-const width = ref(0);
-const height = ref(0);
+function updateFOW(data: LoreSchema<'paperFow'>) {
+    let scalePositionQuadruple = getScaleAndPositionFromPathData(data);
+    let path: paper.CompoundPath = new paper.CompoundPath(data.svgPath);
+    path.fillColor = new paper.Color('black');
+    scaleAndPositionPath(path, scalePositionQuadruple);
 
-const containerRef = ref<HTMLDivElement | null>(null);
+    getActiveLayer().removeChildren();
+    getActiveLayer().addChild(path);
+}
+
+function scaleAndPositionPath(
+    path: paper.CompoundPath,
+    scalePositionQuadruple: number[] | null,
+) {
+    if (
+        scalePositionQuadruple == null ||
+        scalePositionQuadruple[0] == undefined ||
+        scalePositionQuadruple[1] == undefined ||
+        scalePositionQuadruple[2] == undefined ||
+        scalePositionQuadruple[3] == undefined
+    )
+        return;
+
+    let newCanvasWidth = paper.view.size.width;
+    let newCanvasHeight = paper.view.size.height;
+    if (newCanvasWidth == undefined || newCanvasHeight == undefined) return;
+    let scaleX = newCanvasWidth / scalePositionQuadruple[0];
+    let scaleY = newCanvasHeight / scalePositionQuadruple[1];
+    let uniformScale = Math.min(scaleX, scaleY);
+    path.position = new paper.Point(
+        scalePositionQuadruple[2] * scaleX,
+        scalePositionQuadruple[3] * scaleY,
+    );
+    path.scale(uniformScale);
+}
+
+function getScaleAndPositionFromPathData(pathData: LoreSchema<'paperFow'>) {
+    const { width, height, posX, posY } = pathData.canvas;
+    return [width, height, posX, posY];
+}
+
+function getActiveLayer() {
+    return paper.project.activeLayer;
+}
 </script>
 
 <template>
     <div :key="imagePath" ref="containerRef" class="center">
         <template v-if="imagePath">
-            <img ref="imageRef" :src="imagePath" />
-            <canvas ref="canvasRef" :height="height" :width="width" />
+            <img ref="imageRef" :src="imagePath" alt="" />
+            <canvas
+                ref="canvasRef"
+                :height="height"
+                :width="width"
+                hidpi="off"
+            />
+            <p class="mf">{{ someText }}</p>
         </template>
         <div v-else>no image loaded</div>
     </div>
@@ -110,8 +168,8 @@ img {
 
 canvas {
     position: absolute;
-    max-width: 100vw;
-    max-height: 100vh;
+    background-color: red;
+    opacity: 0.5;
 }
 
 .center {
@@ -120,5 +178,11 @@ canvas {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    background-color: blue;
+}
+
+.mf {
+    position: absolute;
+    background-color: lime;
 }
 </style>

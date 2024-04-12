@@ -1,176 +1,192 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useEventListener } from '@vueuse/core';
-import { FogOfWar } from '../logic/FogOfWar';
-import { useMouse } from '@vueuse/core';
 import { storeToRefs } from 'pinia';
 import { useMapStore } from '../logic/useMapStore';
+import { nextTick, ref, type Ref } from 'vue';
+import { useEventListener, useMouse } from '@vueuse/core';
+import paper from 'paper';
 
 const mapStore = useMapStore();
 const { imagePath, fowData } = storeToRefs(mapStore);
 
-// log image dimensions once every second
+const canvasRef = ref<HTMLCanvasElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
 const width = ref(0);
 const height = ref(0);
+const addFow = ref(false);
+const { x: mouseX, y: mouseY } = useMouse();
+
+type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
+
+function initPaper() {
+    if (canvasRef.value) {
+        paper.setup(canvasRef.value);
+        initDrawingTools();
+    }
+}
+
+function initDrawingTools() {
+    // TODO: also set up drawing tools for freehand drawing
+    const tool = new paper.Tool();
+
+    let path: paper.Path;
+    tool.onMouseDown = (event: PaperMouseEvent) => {
+        path = new paper.Path();
+        path.add(event.point);
+    };
+
+    tool.onMouseDrag = (event: PaperMouseEvent) => {
+        if (path) {
+            path.add(event.point);
+        }
+    };
+
+    tool.onMouseUp = () => {
+        if (!path) return;
+
+        path.closed = true;
+        path.simplify();
+
+        addFow.value ? addPathToFow(path) : removePathFromFow(path);
+
+        sendPathUpdate();
+    };
+    tool.activate();
+}
+
+function addPathToFow(path: paper.Path) {
+    let combinedPath: paper.Path | paper.PathItem = path;
+    paper.project.activeLayer.children.forEach((child) => {
+        if (
+            child != path &&
+            (child instanceof paper.Path ||
+                child instanceof paper.CompoundPath ||
+                child instanceof paper.PathItem)
+        ) {
+            combinedPath = combinedPath.unite(child);
+        }
+    });
+    combinedPath.fillColor = new paper.Color('black');
+    paper.project.activeLayer.removeChildren();
+    paper.project.activeLayer.addChild(combinedPath);
+}
+
+function removePathFromFow(path: paper.Path) {
+    let substractedPath:
+        | paper.CompoundPath
+        | paper.PathItem
+        | paper.Path
+        | paper.Item = path;
+    paper.project.activeLayer.children.forEach((child) => {
+        if (
+            (child instanceof paper.CompoundPath ||
+                child instanceof paper.Path ||
+                child instanceof paper.PathItem) &&
+            child != path
+        ) {
+            substractedPath = child.subtract(path);
+        }
+    });
+    paper.project.activeLayer.removeChildren();
+    substractedPath.fillColor = new paper.Color('black');
+    paper.project.activeLayer.addChild(substractedPath);
+}
+
+function sendPathUpdate() {
+    // TODO: add listener for fow update -> send fow to api + client
+    let firstChild: paper.Item | undefined = getFirstActiveLayerChild();
+    if (
+        firstChild instanceof paper.CompoundPath ||
+        firstChild instanceof paper.Path
+    ) {
+        let pathData = addScaleAndPositionToPathData(
+            firstChild.pathData,
+            paper.view.size.width,
+            paper.view.size.height,
+            firstChild.position.x,
+            firstChild.position.y,
+        );
+        mapStore.setFow(pathData);
+    }
+}
+
+function addScaleAndPositionToPathData(
+    pathData: string,
+    width: number,
+    height: number,
+    posX: number,
+    posY: number,
+) {
+    return {
+        canvas: {
+            width,
+            height,
+            posX,
+            posY,
+        },
+        svgPath: pathData,
+    };
+}
+
+function getFirstActiveLayerChild() {
+    if (getActiveLayer().children.length == 1)
+        return getActiveLayer().children.at(0);
+}
+
+function getActiveLayer() {
+    return paper.project.activeLayer;
+}
 
 useEventListener(imageRef, 'load', async () => {
+    void initCanvas(imageRef);
+});
+
+async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
     if (!imageRef.value || !canvasRef.value) {
         throw new Error('no image or canvas');
     }
 
-    width.value = imageRef.value.naturalWidth;
-    height.value = imageRef.value.naturalHeight;
+    width.value = imageRef.value.width;
+    height.value = imageRef.value.height;
 
     const ctx = canvasRef.value.getContext('2d');
     if (!ctx) {
         throw new Error('no ctx');
     }
 
-    off?.();
+    await nextTick();
+    initPaper();
 
-    console.log('before fow', width.value, height.value);
-    fow = new FogOfWar(ctx, width.value, height.value, true);
-
-    console.log('after fow fetch');
-
-    console.log(fow.width, fow.height);
-    ({ off } = fow.onUpdate((data) => {
-        console.warn('new fow');
-        mapStore.setFow(data);
-    }));
-
-    if (fowData.value) fow.setData(fowData.value);
-    // setTimeout needed because otherwise the canvas is not being updated
-    setTimeout(() => fow?.update(true));
-});
-
-watch(fowData, (data) => {
-    fow?.setData(data ?? []);
-    fow?.update(true);
-});
-
-let fow: FogOfWar | null = null;
-let off: ReturnType<FogOfWar['onUpdate']>['off'] | null = null;
-
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-
-type Point = { x: number; y: number };
-
-let startPoint: Point | null = null;
-let mouseStart: Point | null = null;
-useEventListener(canvasRef, 'mousedown', (e) => {
-    if (!canvasRef.value) {
-        return;
-    }
-
-    startPoint = getPointOnCanvas(
-        { x: e.clientX, y: e.clientY },
-        canvasRef.value,
-    );
-    mouseStart = { x: mouseX.value, y: mouseY.value };
-});
-
-function getPointOnCanvas(p: Point, canvas: HTMLCanvasElement): Point {
-    // Get the bounding rectangle of the canvas
-    const rect = canvas.getBoundingClientRect();
-
-    // Calculate the scaling factors
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    // Adjust mouse event coordinates
-    const canvasX = Math.floor((p.x - rect.left) * scaleX);
-    const canvasY = Math.floor((p.y - rect.top) * scaleY);
-
-    return { x: canvasX, y: canvasY };
+    // TODO: load fow from api
+    // TODO: store fow in database
+    // TODO: when transmitting fow to client also send local canvas size -> in player view scale svg to playerview local canvas size
+    // TODO: in player/dm view: when changing view port size -> re init paper with canvas..
 }
-
-useEventListener(canvasRef, 'mouseup', (e) => {
-    if (!canvasRef.value || !startPoint) {
-        return;
-    }
-
-    const end = getPointOnCanvas(
-        { x: e.clientX, y: e.clientY },
-        canvasRef.value,
-    );
-
-    console.log(startPoint, end);
-    const [topLeft, bottomRight] = getTopLeftAndBottomRight(startPoint, end);
-    paintRectangle(topLeft, bottomRight);
-
-    startPoint = null;
-    if (rectangleRef.value) {
-        rectangleRef.value.style.display = 'none';
-    }
-});
-
-const shouldCover = ref(false);
-function paintRectangle(topLeft: Point, bottomRight: Point) {
-    if (!fow) {
-        return;
-    }
-
-    const lines: Array<[{ x: number; y: number }, number]> = [];
-    for (let y = topLeft.y; y < bottomRight.y; y++) {
-        lines.push([{ x: topLeft.x, y }, bottomRight.x - topLeft.x]);
-    }
-
-    console.log('painting');
-    lines.forEach(([start, length]) => {
-        fow?.drawRunInSingleLine(shouldCover.value, start, length);
-    });
-
-    console.log('updating');
-    fow.update();
-    console.log('updated');
-}
-
-function getTopLeftAndBottomRight(start: Point, end: Point): [Point, Point] {
-    return [
-        { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y) },
-        { x: Math.max(start.x, end.x), y: Math.max(start.y, end.y) },
-    ];
-}
-
-const rectangleRef = ref<HTMLDivElement | null>(null);
-useEventListener(canvasRef, 'mousemove', () => {
-    if (!startPoint || !mouseStart || !rectangleRef.value) {
-        return;
-    }
-
-    const currentX = mouseX.value;
-    const currentY = mouseY.value;
-
-    const width = Math.abs(currentX - mouseStart.x);
-    const height = Math.abs(currentY - mouseStart.y);
-
-    rectangleRef.value.style.left = `${Math.min(currentX, mouseStart.x)}px`;
-    rectangleRef.value.style.top = `${Math.min(currentY, mouseStart.y)}px`;
-    rectangleRef.value.style.width = `${width}px`;
-    rectangleRef.value.style.height = `${height}px`;
-    rectangleRef.value.style.display = 'block';
-});
 
 useEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'x') {
-        shouldCover.value = !shouldCover.value;
+        addFow.value = !addFow.value;
     }
 });
 
-const { x: mouseX, y: mouseY } = useMouse();
+useEventListener('resize', () => {
+    initCanvas(imageRef); // TODO: wait for resizing to end (not every pixel) -> also fix this in playerview
+});
 </script>
 
 <template>
     <div :key="imagePath" ref="containerRef" class="center">
         <template v-if="imagePath">
-            <img ref="imageRef" :src="imagePath" />
-            <canvas :width="width" :height="height" ref="canvasRef" />
+            <img ref="imageRef" :src="imagePath" alt="" />
+            <canvas
+                ref="canvasRef"
+                :width="width"
+                :height="height"
+                hidpi="off"
+            />
             <div ref="rectangleRef" class="rectangle" />
             <div
                 class="indicator"
-                :style="{ 'background-color': shouldCover ? 'black' : 'white' }"
+                :style="{ 'background-color': addFow ? 'black' : 'white' }"
             />
             <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
             <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
@@ -187,8 +203,6 @@ img {
 
 canvas {
     position: absolute;
-    max-width: 100vw;
-    max-height: 100vh;
 }
 
 .center {
@@ -197,6 +211,7 @@ canvas {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    background-color: blue;
 }
 
 .rectangle {

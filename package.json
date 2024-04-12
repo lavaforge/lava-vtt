@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "@joaomoreno/unique-names-generator": "^5.1.0",
+        "@types/paper": "^0.12.3",
         "@vueuse/core": "^10.7.2",
         "axios": "^1.6.0",
         "ejs": "^3.1.9",
@@ -20,6 +21,7 @@
         "lodash-es": "^4.17.21",
         "mongodb": "^6.3.0",
         "panzoom": "^9.4.3",
+        "paper": "^0.12.17",
         "pinia": "^2.1.7",
         "socket.io": "^4.7.4",
         "socket.io-client": "^4.7.4",
