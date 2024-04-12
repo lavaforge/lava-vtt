@@ -8,8 +8,11 @@ import { scg } from 'ioc-service-container';
 import paper from 'paper';
 import { project } from 'paper/dist/paper-core';
 
+const NEW_IMAGE = 'new-image';
+const NEW_FOW = 'new-fow';
+
 const { emit } = useSocket({
-  event: 'new-image',
+  event: NEW_IMAGE,
   callback: (data) => {
     hash.value = data;
   },
@@ -68,44 +71,74 @@ function initDrawingTools() {
       path.simplify();
 
       if (addFow.value) {
-        let combinedPath: paper.Path | paper.PathItem = path;
-        paper.project.activeLayer.children.forEach((child) => {
-          console.log('child: ' + child + ' with type ' + child.className);
-          if (
-            child != path &&
-            (child instanceof paper.Path ||
-              child instanceof paper.CompoundPath ||
-              child instanceof paper.PathItem)
-          ) {
-            combinedPath = combinedPath.unite(child);
-          }
-        });
-        combinedPath.fillColor = new paper.Color('black');
-        paper.project.activeLayer.removeChildren();
-        paper.project.activeLayer.addChild(combinedPath);
+        addPathToFow(path);
       } else {
-        let substractedPath:
-          | paper.CompoundPath
-          | paper.PathItem
-          | paper.Path
-          | paper.Item = path;
-        paper.project.activeLayer.children.forEach((child) => {
-          if (
-            (child instanceof paper.CompoundPath ||
-              child instanceof paper.Path ||
-              child instanceof paper.PathItem) &&
-            child != path
-          ) {
-            substractedPath = child.subtract(path);
-          }
-        });
-        paper.project.activeLayer.removeChildren();
-        substractedPath.fillColor = new paper.Color('black');
-        paper.project.activeLayer.addChild(substractedPath);
+        removePathFromFow(path);
       }
+      sendPathUpdate();
     }
   };
   tool.activate();
+}
+
+function addPathToFow(path: paper.Path) {
+  let combinedPath: paper.Path | paper.PathItem = path;
+  paper.project.activeLayer.children.forEach((child) => {
+    console.log('child: ' + child + ' with type ' + child.className);
+    if (
+      child != path &&
+      (child instanceof paper.Path ||
+        child instanceof paper.CompoundPath ||
+        child instanceof paper.PathItem)
+    ) {
+      combinedPath = combinedPath.unite(child);
+    }
+  });
+  combinedPath.fillColor = new paper.Color('black');
+  paper.project.activeLayer.removeChildren();
+  paper.project.activeLayer.addChild(combinedPath);
+}
+
+function removePathFromFow(path: paper.Path) {
+  let substractedPath:
+    | paper.CompoundPath
+    | paper.PathItem
+    | paper.Path
+    | paper.Item = path;
+  paper.project.activeLayer.children.forEach((child) => {
+    if (
+      (child instanceof paper.CompoundPath ||
+        child instanceof paper.Path ||
+        child instanceof paper.PathItem) &&
+      child != path
+    ) {
+      substractedPath = child.subtract(path);
+    }
+  });
+  paper.project.activeLayer.removeChildren();
+  substractedPath.fillColor = new paper.Color('black');
+  paper.project.activeLayer.addChild(substractedPath);
+}
+
+function sendPathUpdate() {
+  // TODO: add listener for fow update -> send fow to api + client
+  let firstChild: paper.Item | undefined = getFirstActiveLayerChild();
+  if (
+    firstChild instanceof paper.CompoundPath ||
+    firstChild instanceof paper.Path
+  ) {
+    console.log('Sending path data: ' + firstChild.pathData);
+    emit(NEW_FOW, firstChild.pathData);
+  }
+}
+
+function getFirstActiveLayerChild() {
+  if (getActiveLayer().children.length == 1)
+    return getActiveLayer().children.at(0);
+}
+
+function getActiveLayer() {
+  return paper.project.activeLayer;
 }
 
 useEventListener(imageRef, 'load', async () => {
@@ -123,6 +156,8 @@ useEventListener(imageRef, 'load', async () => {
 
   await nextTick();
   initPaper();
+
+  // TODO: load fow form api
 });
 
 useEventListener('keydown', (e: KeyboardEvent) => {
