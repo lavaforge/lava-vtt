@@ -3,9 +3,11 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { MongoClient } from 'mongodb';
 import { apiRouter } from './routes/api.route';
-import { scg, ServiceContainer } from 'ioc-service-container';
+import { ServiceContainer } from 'ioc-service-container';
 import { FowService } from './services/fow.service';
 import { BackendConduit } from './conduit';
+import { DisplayStore } from './display.store';
+import { setupFowConduit } from './routes/fow.route';
 
 const port = process.env.PORT || 3000;
 
@@ -16,6 +18,7 @@ await client.connect();
 const db = client.db(dbName);
 ServiceContainer.set('Db', () => db);
 ServiceContainer.set('FowService', FowService);
+ServiceContainer.set('DisplayStore', DisplayStore);
 
 const app = express();
 app.use((req, res, next) => {
@@ -37,24 +40,10 @@ const io = new Server(httpServer, {
 });
 
 const conduit = new BackendConduit(io);
-
-conduit.attune('ping', (lore, respond) => {
-  console.log('ping', lore.msg);
-  return respond({ msg: 'pong' });
-});
-
-const fogOfWars = {};
-let currentImage = '';
-
-function newDisplayedImage(hash: string) {
-  currentImage = hash;
-  console.log('new image on server', hash);
-  // io.emit('new-image', hash);
-}
-
-ServiceContainer.set('newDisplayedImage', () => newDisplayedImage);
+ServiceContainer.set('conduit', () => conduit);
 
 app.use('/api', apiRouter);
+setupFowConduit();
 
 httpServer.listen(port, async () => {
   console.log('listening on *:3000');

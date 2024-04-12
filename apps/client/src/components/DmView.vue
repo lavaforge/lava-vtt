@@ -1,22 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useSocket } from '../logic/useSocket';
+import { ref, watch } from 'vue';
 import { useEventListener } from '@vueuse/core';
 import { FogOfWar } from '../logic/FogOfWar';
 import { useMouse } from '@vueuse/core';
-import { scg } from 'ioc-service-container';
+import { storeToRefs } from 'pinia';
+import { useMapStore } from '../logic/useMapStore';
 
-const { emit } = useSocket({
-  event: 'new-image',
-  callback: (data) => {
-    hash.value = data;
-  },
-});
-
-const apiUrl = scg('apiUrl');
-
-const hash = ref('');
-const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
+const mapStore = useMapStore();
+const { imagePath, fowData } = storeToRefs(mapStore);
 
 // log image dimensions once every second
 const imageRef = ref<HTMLImageElement | null>(null);
@@ -40,30 +31,23 @@ useEventListener(imageRef, 'load', async () => {
 
   console.log('before fow', width.value, height.value);
   fow = new FogOfWar(ctx, width.value, height.value, true);
-  try {
-    await fetch(`${apiUrl}/api/fow/${hash.value}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data) {
-          console.log('setting data', data);
-          fow?.setData(data);
-          fow?.update();
-          console.log('initial update');
-        }
-      });
-  } catch (e) {
-    console.error(e);
-  }
 
   console.log('after fow fetch');
 
   console.log(fow.width, fow.height);
   ({ off } = fow.onUpdate((data) => {
     console.warn('new fow');
-    emit('new-fow', data);
+    mapStore.setFow(data);
   }));
 
-  fow.update(true);
+  fow.setData(fowData.value ?? []);
+  // setTimeout needed because otherwise the canvas is not being updated
+  setTimeout(() => fow?.update(true));
+});
+
+watch(fowData, (data) => {
+  fow?.setData(data ?? []);
+  fow?.update(true);
 });
 
 let fow: FogOfWar | null = null;
@@ -177,7 +161,7 @@ const { x: mouseX, y: mouseY } = useMouse();
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
-    <template v-if="hash">
+    <template v-if="imagePath">
       <img ref="imageRef" :src="imagePath" />
       <canvas :width="width" :height="height" ref="canvasRef" />
       <div ref="rectangleRef" class="rectangle" />

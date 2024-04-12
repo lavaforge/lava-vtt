@@ -1,21 +1,18 @@
-import { Router } from 'express';
 import { scg } from 'ioc-service-container';
 
-const fowRouter = Router();
+export function setupFowConduit(): void {
+  const conduit = scg('conduit');
 
-fowRouter.get('/:hash', (req, res) => {
-  const fowService = scg('FowService');
+  conduit.attune('requestFow', async (lore, respond) => {
+    const fowService = scg('FowService');
+    const fowData = await fowService.getFow(lore.hash);
 
-  const hash = req.params.hash;
-
-  fowService.getFow(hash).then((fow) => {
-    if (fow === null) {
-      res.status(404).send('Not found');
-      return;
-    }
-
-    res.json(fow);
+    console.log('requestFow', lore.hash, fowData);
+    return respond({ fow: fowData, hash: lore.hash });
   });
-});
 
-export { fowRouter };
+  conduit.attune('fowUpdate', async (lore) => {
+    const fowService = scg('FowService');
+    await fowService.setFow(lore.hash, lore.fow);
+  });
+}
