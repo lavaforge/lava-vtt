@@ -1,14 +1,20 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import panzoom from 'panzoom';
 import { useEventListener } from '@vueuse/core';
 import { useSocket } from '../logic/useSocket';
-import { FogOfWar } from '../logic/FogOfWar';
 import { scg } from 'ioc-service-container';
+import paper from 'paper';
 
 const apiUrl = scg('apiUrl');
 const hash = ref('');
 const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
+
+function initPaper() {
+  if (canvasRef.value) {
+    paper.setup(canvasRef.value);
+  }
+}
 
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
@@ -53,8 +59,6 @@ const resetZoom = () => {
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-let fow: FogOfWar | null = null;
-
 useEventListener(imageRef, 'load', async () => {
   if (!imageRef.value || !canvasRef.value) {
     throw new Error('no image or canvas');
@@ -69,8 +73,9 @@ useEventListener(imageRef, 'load', async () => {
   if (!ctx) {
     throw new Error('no context');
   }
-
-  fow = new FogOfWar(ctx, width.value, height.value, false);
+  await nextTick();
+  initPaper();
+  /*fow = new FogOfWar(ctx, width.value, height.value, false);
   fow.update();
 
   await fetch(`${apiUrl}/api/fow/${hash.value}`)
@@ -80,16 +85,27 @@ useEventListener(imageRef, 'load', async () => {
         fow?.setData(data);
         fow?.update();
       }
-    });
+    }); */
 });
 
 const { emit } = useSocket({
   event: 'fow-broadcast',
   callback: (data) => {
-    fow?.setData(data);
-    fow?.update();
+    console.log('fow-broadcast', data);
+    updateFOW(data);
   },
 });
+
+function updateFOW(data: string) {
+  let path: paper.CompoundPath = new paper.CompoundPath(data);
+  path.fillColor = new paper.Color('black');
+  getActiveLayer().removeChildren();
+  getActiveLayer().addChild(path);
+}
+
+function getActiveLayer() {
+  return paper.project.activeLayer;
+}
 
 useSocket({
   event: 'new-image',

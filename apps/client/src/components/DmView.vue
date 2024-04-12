@@ -2,11 +2,9 @@
 import { computed, nextTick, ref } from 'vue';
 import { useSocket } from '../logic/useSocket';
 import { useEventListener } from '@vueuse/core';
-import { FogOfWar } from '../logic/FogOfWar';
 import { useMouse } from '@vueuse/core';
 import { scg } from 'ioc-service-container';
 import paper from 'paper';
-import { project } from 'paper/dist/paper-core';
 
 const NEW_IMAGE = 'new-image';
 const NEW_FOW = 'new-fow';
@@ -127,6 +125,7 @@ function sendPathUpdate() {
     firstChild instanceof paper.CompoundPath ||
     firstChild instanceof paper.Path
   ) {
+    console.log(firstChild);
     console.log('Sending path data: ' + firstChild.pathData);
     emit(NEW_FOW, firstChild.pathData);
   }
