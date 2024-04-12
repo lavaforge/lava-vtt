@@ -7,26 +7,27 @@ export const useMapStore = defineStore('map', () => {
   const apiUrl = scg('apiUrl');
 
   const currentHash = ref<string>();
-  const nextHash = ref<string>();
   const currentFowData = ref<number[]>();
 
-  conduit.attune('imageHash', (lore) => {
-    nextHash.value = lore.hash;
+  conduit.attune('imageHash', async (lore) => {
+    const newHash = lore.hash;
+    if (!newHash) {
+      currentHash.value = undefined;
+      currentFowData.value = undefined;
+      return;
+    }
+
+    const newFow = (
+      await conduit.invoke('requestFow', 'nexus', { hash: newHash })
+    ).fow;
+
+    currentFowData.value = newFow ?? undefined;
+    currentHash.value = newHash;
   });
 
   conduit.attune('fowUpdate', (lore) => {
     if (lore.hash !== currentHash.value) return;
     currentFowData.value = lore.fow;
-  });
-
-  watch(nextHash, async (newHash) => {
-    if (!newHash) return;
-    const newFow = (
-      await conduit.invoke('requestFow', 'nexus', { hash: newHash })
-    ).fow;
-    console.log('newFow', newFow);
-    if (newFow) currentFowData.value = newFow;
-    currentHash.value = newHash;
   });
 
   const imagePath = computed(() =>

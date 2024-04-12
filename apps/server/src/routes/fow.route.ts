@@ -7,7 +7,6 @@ export function setupFowConduit(): void {
     const fowService = scg('FowService');
     const fowData = await fowService.getFow(lore.hash);
 
-    console.log('requestFow', lore.hash, fowData);
     return respond({ fow: fowData, hash: lore.hash });
   });
 
