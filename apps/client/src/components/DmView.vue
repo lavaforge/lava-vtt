@@ -5,6 +5,7 @@ import { useEventListener } from '@vueuse/core';
 import { useMouse } from '@vueuse/core';
 import { scg } from 'ioc-service-container';
 import paper from 'paper';
+import { Raster } from 'paper/dist/paper-core';
 
 const NEW_IMAGE = 'new-image';
 const NEW_FOW = 'new-fow';
@@ -21,8 +22,6 @@ const hash = ref('');
 const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
-const width = ref(0);
-const height = ref(0);
 const addFow = ref(false);
 const { x: mouseX, y: mouseY } = useMouse();
 
@@ -145,19 +144,35 @@ useEventListener(imageRef, 'load', async () => {
     throw new Error('no image or canvas');
   }
 
-  width.value = imageRef.value.naturalWidth;
-  height.value = imageRef.value.naturalHeight;
-
   const ctx = canvasRef.value.getContext('2d');
   if (!ctx) {
     throw new Error('no ctx');
   }
 
   await nextTick();
-  initPaper();
+  initPaper(); // TODO: init canvas with fixed size equal to image size (as it was before) -> then re-init everything/reload page when window gets resized
+  loadImage();
 
   // TODO: load fow form api
 });
+
+function loadImage() {
+  const raster = new paper.Raster('loaded-image');
+  const scale = getScaleForImage(raster);
+  raster.scale(scale, scale);
+  raster.position = paper.view.center;
+  const drawingLayer = new paper.Layer();
+  drawingLayer.activate();
+}
+
+function getScaleForImage(raster: paper.Raster) {
+  const widthRatioOfCanvasToImage =
+    paper.view.bounds.width / raster.bounds.width;
+  const heightRatioOfCanvasToImage =
+    paper.view.bounds.height / raster.bounds.height;
+  const scale = Math.min(widthRatioOfCanvasToImage, heightRatioOfCanvasToImage);
+  return scale;
+}
 
 useEventListener('keydown', (e: KeyboardEvent) => {
   if (e.key === 'x') {
@@ -169,8 +184,13 @@ useEventListener('keydown', (e: KeyboardEvent) => {
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <template v-if="hash">
-      <img ref="imageRef" :src="imagePath" />
-      <canvas :width="width" :height="height" ref="canvasRef" />
+      <img
+        id="loaded-image"
+        ref="imageRef"
+        :src="imagePath"
+        style="display: none"
+      />
+      <canvas ref="canvasRef" />
       <div ref="rectangleRef" class="rectangle" />
       <div
         class="indicator"
@@ -189,10 +209,15 @@ img {
   max-height: 100vh;
 }
 
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
 canvas {
-  position: absolute;
-  max-width: 100vw;
-  max-height: 100vh;
+  width: 100%;
+  height: 100%;
 }
 
 .center {

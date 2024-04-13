@@ -9,6 +9,9 @@ import paper from 'paper';
 const apiUrl = scg('apiUrl');
 const hash = ref('');
 const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
+const imageRef = ref<HTMLImageElement | null>(null);
+let instance: ReturnType<typeof panzoom> | null = null;
+const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 function initPaper() {
   if (canvasRef.value) {
@@ -24,9 +27,6 @@ function toggleFullscreen() {
   }
 }
 
-const imageRef = ref<HTMLImageElement | null>(null);
-
-let instance: ReturnType<typeof panzoom> | null = null;
 const resetZoom = () => {
   instance?.dispose();
 
@@ -57,16 +57,11 @@ const resetZoom = () => {
   });
 };
 
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-
 useEventListener(imageRef, 'load', async () => {
   if (!imageRef.value || !canvasRef.value) {
     throw new Error('no image or canvas');
   }
   emit('loaded');
-
-  height.value = imageRef.value.naturalHeight;
-  width.value = imageRef.value.naturalWidth;
   resetZoom();
 
   const ctx = canvasRef.value.getContext('2d');
@@ -75,6 +70,8 @@ useEventListener(imageRef, 'load', async () => {
   }
   await nextTick();
   initPaper();
+  loadImage(); // TODO: put duplicate methods in shared space somewhere
+
   /*fow = new FogOfWar(ctx, width.value, height.value, false);
   fow.update();
 
@@ -87,6 +84,24 @@ useEventListener(imageRef, 'load', async () => {
       }
     }); */
 });
+
+function loadImage() {
+  const raster = new paper.Raster('loaded-image');
+  const scale = getScaleForImage(raster);
+  raster.scale(scale, scale);
+  raster.position = paper.view.center;
+  const drawingLayer = new paper.Layer();
+  drawingLayer.activate();
+}
+
+function getScaleForImage(raster: paper.Raster) {
+  const widthRatioOfCanvasToImage =
+    paper.view.bounds.width / raster.bounds.width;
+  const heightRatioOfCanvasToImage =
+    paper.view.bounds.height / raster.bounds.height;
+  const scale = Math.min(widthRatioOfCanvasToImage, heightRatioOfCanvasToImage);
+  return scale;
+}
 
 const { emit } = useSocket({
   event: 'fow-broadcast',
@@ -115,17 +130,19 @@ useSocket({
   },
 });
 
-const width = ref(0);
-const height = ref(0);
-
 const containerRef = ref<HTMLDivElement | null>(null);
 </script>
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <template v-if="hash">
-      <img ref="imageRef" :src="imagePath" />
-      <canvas ref="canvasRef" :height="height" :width="width" />
+      <img
+        id="loaded-image"
+        ref="imageRef"
+        :src="imagePath"
+        style="display: none"
+      />
+      <canvas ref="canvasRef" />
     </template>
     <div v-else>no image loaded</div>
   </div>
@@ -142,10 +159,15 @@ img {
   max-height: 100vh;
 }
 
+html,
+body {
+  width: 100%;
+  height: 100%;
+}
+
 canvas {
-  position: absolute;
-  max-width: 100vw;
-  max-height: 100vh;
+  width: 100%;
+  height: 100%;
 }
 
 .center {
