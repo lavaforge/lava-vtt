@@ -1,18 +1,21 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 import panzoom from 'panzoom';
-import { useEventListener } from '@vueuse/core';
+import { useEventListener, useWakeLock } from '@vueuse/core';
 import { FogOfWar } from '../logic/FogOfWar';
 import { storeToRefs } from 'pinia';
 import { useMapStore } from '../logic/useMapStore';
 
 const { imagePath, fowData } = storeToRefs(useMapStore());
+const { request, release } = useWakeLock();
 
-function toggleFullscreen() {
+async function toggleFullscreen() {
   if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen?.();
+    await document.documentElement.requestFullscreen?.();
+    await request('screen');
   } else {
-    document.exitFullscreen?.();
+    await document.exitFullscreen?.();
+    await release();
   }
 }
 
