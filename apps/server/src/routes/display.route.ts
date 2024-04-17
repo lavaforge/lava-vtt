@@ -13,4 +13,10 @@ displayRouter.post('/', (req, res) => {
   res.send('ok');
 });
 
+displayRouter.get('/', (req, res) => {
+  const displayStore = scg('DisplayStore');
+
+  res.send(displayStore.currentHash ?? '');
+});
+
 export { displayRouter };

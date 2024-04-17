@@ -32,17 +32,15 @@ router.post('/', raw({ limit: '15mb' }), async (req, res) => {
 
   const binary = new Binary(req.body);
 
-  const asdf = await db
+  await db
     .collection('images')
     .updateOne(
       { hash },
-      { $setOnInsert: { hash, content: binary } },
+      { $setOnInsert: { content: binary, hash } },
       { upsert: true },
     );
 
-  console.log(`Inserted ${asdf.upsertedCount} documents`);
-
-  res.send('ok');
+  res.send(hash);
 });
 
 export { router as imageRouter };
