@@ -12,6 +12,8 @@ const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
 const imageRef = ref<HTMLImageElement | null>(null);
 let instance: ReturnType<typeof panzoom> | null = null;
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+const width = ref(0);
+const height = ref(0);
 
 function initPaper() {
   if (canvasRef.value) {
@@ -62,15 +64,16 @@ useEventListener(imageRef, 'load', async () => {
     throw new Error('no image or canvas');
   }
   emit('loaded');
+  height.value = imageRef.value.naturalHeight;
+  width.value = imageRef.value.naturalWidth;
   resetZoom();
-
   const ctx = canvasRef.value.getContext('2d');
   if (!ctx) {
     throw new Error('no context');
   }
   await nextTick();
   initPaper();
-  loadImage(); // TODO: put duplicate methods in shared space somewhere
+  scalePaper();
 
   /*fow = new FogOfWar(ctx, width.value, height.value, false);
   fow.update();
@@ -85,22 +88,17 @@ useEventListener(imageRef, 'load', async () => {
     }); */
 });
 
-function loadImage() {
-  const raster = new paper.Raster('loaded-image');
-  const scale = getScaleForImage(raster);
-  raster.scale(scale, scale);
-  raster.position = paper.view.center;
-  const drawingLayer = new paper.Layer();
-  drawingLayer.activate();
-}
-
-function getScaleForImage(raster: paper.Raster) {
-  const widthRatioOfCanvasToImage =
-    paper.view.bounds.width / raster.bounds.width;
-  const heightRatioOfCanvasToImage =
-    paper.view.bounds.height / raster.bounds.height;
-  const scale = Math.min(widthRatioOfCanvasToImage, heightRatioOfCanvasToImage);
-  return scale;
+function scalePaper() {
+  const actualWidth = paper.view.viewSize.width;
+  const actualHeight = paper.view.viewSize.height;
+  const scaleX = actualWidth / width.value;
+  const scaleY = actualHeight / height.value;
+  paper.view.matrix.reset();
+  const translateX = (actualWidth - width.value * Math.min(scaleX, scaleY)) / 2;
+  const translateY =
+    (actualHeight - height.value * Math.min(scaleX, scaleY)) / 2;
+  paper.view.translate(new paper.Point(translateX, translateY));
+  paper.view.scale(Math.min(scaleX, scaleY));
 }
 
 const { emit } = useSocket({
@@ -113,6 +111,7 @@ const { emit } = useSocket({
 
 function updateFOW(data: string) {
   let path: paper.CompoundPath = new paper.CompoundPath(data);
+  console.log(path);
   path.fillColor = new paper.Color('black');
   getActiveLayer().removeChildren();
   getActiveLayer().addChild(path);
@@ -136,13 +135,8 @@ const containerRef = ref<HTMLDivElement | null>(null);
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <template v-if="hash">
-      <img
-        id="loaded-image"
-        ref="imageRef"
-        :src="imagePath"
-        style="display: none"
-      />
-      <canvas ref="canvasRef" />
+      <img ref="imageRef" :src="imagePath" />
+      <canvas ref="canvasRef" :height="height" :width="width" resize="true" />
     </template>
     <div v-else>no image loaded</div>
   </div>
@@ -159,15 +153,10 @@ img {
   max-height: 100vh;
 }
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-}
-
-canvas {
-  width: 100%;
-  height: 100%;
+canvas[resize] {
+  position: absolute;
+  background-color: red;
+  opacity: 0.5;
 }
 
 .center {

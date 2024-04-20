@@ -5,7 +5,7 @@ import { useEventListener } from '@vueuse/core';
 import { useMouse } from '@vueuse/core';
 import { scg } from 'ioc-service-container';
 import paper from 'paper';
-import { Raster } from 'paper/dist/paper-core';
+import { Point, Raster, view } from 'paper/dist/paper-core';
 
 const NEW_IMAGE = 'new-image';
 const NEW_FOW = 'new-fow';
@@ -22,6 +22,8 @@ const hash = ref('');
 const imagePath = computed(() => `${apiUrl}/api/image/${hash.value}`);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
+const width = ref(0);
+const height = ref(0);
 const addFow = ref(false);
 const { x: mouseX, y: mouseY } = useMouse();
 
@@ -125,7 +127,6 @@ function sendPathUpdate() {
     firstChild instanceof paper.Path
   ) {
     console.log(firstChild);
-    console.log('Sending path data: ' + firstChild.pathData);
     emit(NEW_FOW, firstChild.pathData);
   }
 }
@@ -144,6 +145,9 @@ useEventListener(imageRef, 'load', async () => {
     throw new Error('no image or canvas');
   }
 
+  width.value = imageRef.value.naturalWidth;
+  height.value = imageRef.value.naturalHeight;
+
   const ctx = canvasRef.value.getContext('2d');
   if (!ctx) {
     throw new Error('no ctx');
@@ -151,27 +155,23 @@ useEventListener(imageRef, 'load', async () => {
 
   await nextTick();
   initPaper(); // TODO: init canvas with fixed size equal to image size (as it was before) -> then re-init everything/reload page when window gets resized
-  loadImage();
+  scalePaper();
 
   // TODO: load fow form api
 });
 
-function loadImage() {
-  const raster = new paper.Raster('loaded-image');
-  const scale = getScaleForImage(raster);
-  raster.scale(scale, scale);
-  raster.position = paper.view.center;
-  const drawingLayer = new paper.Layer();
-  drawingLayer.activate();
-}
-
-function getScaleForImage(raster: paper.Raster) {
-  const widthRatioOfCanvasToImage =
-    paper.view.bounds.width / raster.bounds.width;
-  const heightRatioOfCanvasToImage =
-    paper.view.bounds.height / raster.bounds.height;
-  const scale = Math.min(widthRatioOfCanvasToImage, heightRatioOfCanvasToImage);
-  return scale;
+function scalePaper() {
+  // TODO: instead of this (or in addition) scale svg before putting it into client canvas
+  const actualWidth = paper.view.viewSize.width;
+  const actualHeight = paper.view.viewSize.height;
+  const scaleX = actualWidth / width.value;
+  const scaleY = actualHeight / height.value;
+  paper.view.matrix.reset();
+  const translateX = (actualWidth - width.value * Math.min(scaleX, scaleY)) / 2;
+  const translateY =
+    (actualHeight - height.value * Math.min(scaleX, scaleY)) / 2;
+  paper.view.translate(new paper.Point(translateX, translateY));
+  paper.view.scale(Math.min(scaleX, scaleY));
 }
 
 useEventListener('keydown', (e: KeyboardEvent) => {
@@ -184,13 +184,8 @@ useEventListener('keydown', (e: KeyboardEvent) => {
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <template v-if="hash">
-      <img
-        id="loaded-image"
-        ref="imageRef"
-        :src="imagePath"
-        style="display: none"
-      />
-      <canvas ref="canvasRef" />
+      <img ref="imageRef" :src="imagePath" />
+      <canvas ref="canvasRef" :width="width" :height="height" resize="true" />
       <div ref="rectangleRef" class="rectangle" />
       <div
         class="indicator"
@@ -209,15 +204,10 @@ img {
   max-height: 100vh;
 }
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-}
-
-canvas {
-  width: 100%;
-  height: 100%;
+canvas[resize] {
+  position: absolute;
+  background-color: red;
+  opacity: 0.5;
 }
 
 .center {
