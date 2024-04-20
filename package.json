@@ -86,6 +86,7 @@
         "*": "prettier --write"
     },
     "workspaces": [
-        "apps/obsidian-plugin"
+        "apps/obsidian-plugin",
+        "apps/browser-extension"
     ]
 }
