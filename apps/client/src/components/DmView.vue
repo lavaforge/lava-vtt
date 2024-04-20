@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, type Ref } from 'vue';
 import { useSocket } from '../logic/useSocket';
-import { useEventListener } from '@vueuse/core';
-import { useMouse } from '@vueuse/core';
+import { useEventListener, useMouse } from '@vueuse/core';
 import { scg } from 'ioc-service-container';
 import paper from 'paper';
-import { Point, Raster, view } from 'paper/dist/paper-core';
 
 const NEW_IMAGE = 'new-image';
 const NEW_FOW = 'new-fow';
@@ -27,6 +25,8 @@ const height = ref(0);
 const addFow = ref(false);
 const { x: mouseX, y: mouseY } = useMouse();
 
+type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
+
 function initPaper() {
   if (canvasRef.value) {
     paper.setup(canvasRef.value);
@@ -38,44 +38,27 @@ function initDrawingTools() {
   // TODO: also set up drawing tools for freehand drawing
   const tool = new paper.Tool();
 
-  console.log('init tool');
-
   let path: paper.Path;
-  tool.onMouseDown = function (event: {
-    point: paper.Segment | paper.PointLike | number[];
-  }) {
-    console.log('mouse down detected');
+  tool.onMouseDown = (event: PaperMouseEvent) => {
     path = new paper.Path();
-    if (addFow.value) {
-      path.strokeColor = new paper.Color('black');
-    } else {
-      path.strokeColor = new paper.Color('red');
-    }
     path.add(event.point);
   };
 
-  tool.onMouseDrag = function (event: {
-    point: number[] | paper.Segment | paper.PointLike;
-  }) {
+  tool.onMouseDrag = (event: PaperMouseEvent) => {
     if (path) {
-      console.log('drag');
       path.add(event.point);
     }
   };
 
-  tool.onMouseUp = function () {
-    console.log('mouse up');
-    if (path) {
-      path.closed = true;
-      path.simplify();
+  tool.onMouseUp = () => {
+    if (!path) return;
 
-      if (addFow.value) {
-        addPathToFow(path);
-      } else {
-        removePathFromFow(path);
-      }
-      sendPathUpdate();
-    }
+    path.closed = true;
+    path.simplify();
+
+    addFow.value ? addPathToFow(path) : removePathFromFow(path);
+
+    sendPathUpdate();
   };
   tool.activate();
 }
@@ -83,7 +66,6 @@ function initDrawingTools() {
 function addPathToFow(path: paper.Path) {
   let combinedPath: paper.Path | paper.PathItem = path;
   paper.project.activeLayer.children.forEach((child) => {
-    console.log('child: ' + child + ' with type ' + child.className);
     if (
       child != path &&
       (child instanceof paper.Path ||
@@ -126,8 +108,6 @@ function sendPathUpdate() {
     firstChild instanceof paper.CompoundPath ||
     firstChild instanceof paper.Path
   ) {
-    console.log('pos: ' + firstChild.position);
-    //let pathData = addScaleAndPositionToPathData(firstChild.pathData, canvasRef.value?.width, canvasRef.value?.height, firstChild.position.x, firstChild.position.y);
     let pathData = addScaleAndPositionToPathData(
       firstChild.pathData,
       paper.view.size.width,
@@ -135,7 +115,6 @@ function sendPathUpdate() {
       firstChild.position.x,
       firstChild.position.y,
     );
-    console.log(pathData);
     emit(NEW_FOW, pathData);
   }
 }
@@ -147,9 +126,7 @@ function addScaleAndPositionToPathData(
   posX: number | undefined,
   posY: number | undefined,
 ) {
-  pathData =
-    '[' + width + ',' + height + ',' + posX + ',' + posY + ']' + pathData;
-  return pathData;
+  return '[' + width + ',' + height + ',' + posX + ',' + posY + ']' + pathData;
 }
 
 function getFirstActiveLayerChild() {
@@ -162,7 +139,7 @@ function getActiveLayer() {
 }
 
 useEventListener(imageRef, 'load', async () => {
-  initCanvas(imageRef);
+  void initCanvas(imageRef);
 });
 
 async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
@@ -193,15 +170,15 @@ useEventListener('keydown', (e: KeyboardEvent) => {
   }
 });
 
-useEventListener('resize', (e) => {
-  initCanvas(imageRef); // TODO: wait for rezising to end (not every pixel) -> also fix this in playerview
+useEventListener('resize', () => {
+  initCanvas(imageRef); // TODO: wait for resizing to end (not every pixel) -> also fix this in playerview
 });
 </script>
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <template v-if="hash">
-      <img ref="imageRef" :src="imagePath" />
+      <img ref="imageRef" :src="imagePath" alt="" />
       <canvas ref="canvasRef" :width="width" :height="height" hidpi="off" />
       <div ref="rectangleRef" class="rectangle" />
       <div
@@ -223,8 +200,6 @@ img {
 
 canvas {
   position: absolute;
-  background-color: red;
-  opacity: 0.5;
 }
 
 .center {

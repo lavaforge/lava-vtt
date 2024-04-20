@@ -62,7 +62,7 @@ const resetZoom = () => {
 };
 
 useEventListener(imageRef, 'load', async () => {
-  initCanvas(imageRef);
+  void initCanvas(imageRef);
 });
 
 async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
@@ -81,7 +81,7 @@ async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
   initPaper();
 }
 
-useEventListener('resize', (e) => {
+useEventListener('resize', () => {
   initCanvas(imageRef);
 });
 
@@ -98,11 +98,6 @@ function updateFOW(data: string) {
   let path: paper.CompoundPath = new paper.CompoundPath(
     getPathDataWithoutScaleInfo(data),
   );
-
-  console.log(data);
-  console.log(scalePositionQuadruple);
-  console.log(path);
-
   path.fillColor = new paper.Color('black');
   scaleAndPositionPath(path, scalePositionQuadruple);
 
@@ -114,35 +109,33 @@ function scaleAndPositionPath(
   path: paper.CompoundPath,
   scalePositionQuadruple: number[] | null,
 ) {
-  if (scalePositionQuadruple == null || scalePositionQuadruple == undefined)
-    return;
   if (
+    scalePositionQuadruple == null ||
     scalePositionQuadruple[0] == undefined ||
     scalePositionQuadruple[1] == undefined ||
     scalePositionQuadruple[2] == undefined ||
     scalePositionQuadruple[3] == undefined
   )
     return;
+
   let newCanvasWidth = paper.view.size.width;
   let newCanvasHeight = paper.view.size.height;
   if (newCanvasWidth == undefined || newCanvasHeight == undefined) return;
   let scaleX = newCanvasWidth / scalePositionQuadruple[0];
   let scaleY = newCanvasHeight / scalePositionQuadruple[1];
   let uniformScale = Math.min(scaleX, scaleY);
-  console.log('pos before: ' + path.position);
   path.position = new paper.Point(
     scalePositionQuadruple[2] * scaleX,
     scalePositionQuadruple[3] * scaleY,
   );
-  console.log('pos after: ' + path.position);
   path.scale(uniformScale);
 }
 
 function getScaleAndPositionFromPathData(pathData: string) {
-  const match = pathData.match(/\[(\d+),(\d+),(\d+\.\d+),(\d+\.\d+)\]/);
+  const match = pathData.match(/\[(\d+),(\d+),(\d+\.\d+),(\d+\.\d+)]/);
   if (match && match.length === 5) {
-    const width = parseInt(match[1], 10);
-    const height = parseInt(match[2], 10);
+    const width = parseInt(match[1]);
+    const height = parseInt(match[2]);
     const posX = parseFloat(match[3]);
     const posY = parseFloat(match[4]);
     return [width, height, posX, posY];
@@ -151,8 +144,7 @@ function getScaleAndPositionFromPathData(pathData: string) {
 }
 
 function getPathDataWithoutScaleInfo(pathData: string) {
-  const cleanedPathData = pathData.replace(/\[\d+,\d+\]/, '');
-  return cleanedPathData;
+  return pathData.replace(/\[\d+,\d+]/, '');
 }
 
 function getActiveLayer() {
@@ -162,7 +154,6 @@ function getActiveLayer() {
 useSocket({
   event: 'new-image',
   callback: (newHash) => {
-    console.log('new image', newHash);
     hash.value = newHash;
   },
 });
@@ -171,7 +162,7 @@ useSocket({
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <template v-if="hash">
-      <img ref="imageRef" :src="imagePath" />
+      <img ref="imageRef" :src="imagePath" alt="" />
       <canvas ref="canvasRef" :height="height" :width="width" hidpi="off" />
       <p class="mf">{{ someText }}</p>
     </template>
