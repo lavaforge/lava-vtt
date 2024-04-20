@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, type Ref } from 'vue';
 import { useSocket } from '../logic/useSocket';
 import { useEventListener } from '@vueuse/core';
 import { useMouse } from '@vueuse/core';
@@ -126,9 +126,30 @@ function sendPathUpdate() {
     firstChild instanceof paper.CompoundPath ||
     firstChild instanceof paper.Path
   ) {
-    console.log(firstChild);
-    emit(NEW_FOW, firstChild.pathData);
+    console.log('pos: ' + firstChild.position);
+    //let pathData = addScaleAndPositionToPathData(firstChild.pathData, canvasRef.value?.width, canvasRef.value?.height, firstChild.position.x, firstChild.position.y);
+    let pathData = addScaleAndPositionToPathData(
+      firstChild.pathData,
+      paper.view.size.width,
+      paper.view.size.height,
+      firstChild.position.x,
+      firstChild.position.y,
+    );
+    console.log(pathData);
+    emit(NEW_FOW, pathData);
   }
+}
+
+function addScaleAndPositionToPathData(
+  pathData: string,
+  width: number | undefined,
+  height: number | undefined,
+  posX: number | undefined,
+  posY: number | undefined,
+) {
+  pathData =
+    '[' + width + ',' + height + ',' + posX + ',' + posY + ']' + pathData;
+  return pathData;
 }
 
 function getFirstActiveLayerChild() {
@@ -141,12 +162,16 @@ function getActiveLayer() {
 }
 
 useEventListener(imageRef, 'load', async () => {
+  initCanvas(imageRef);
+});
+
+async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
   if (!imageRef.value || !canvasRef.value) {
     throw new Error('no image or canvas');
   }
 
-  width.value = imageRef.value.naturalWidth;
-  height.value = imageRef.value.naturalHeight;
+  width.value = imageRef.value.width;
+  height.value = imageRef.value.height;
 
   const ctx = canvasRef.value.getContext('2d');
   if (!ctx) {
@@ -154,24 +179,12 @@ useEventListener(imageRef, 'load', async () => {
   }
 
   await nextTick();
-  initPaper(); // TODO: init canvas with fixed size equal to image size (as it was before) -> then re-init everything/reload page when window gets resized
-  scalePaper();
+  initPaper();
 
-  // TODO: load fow form api
-});
-
-function scalePaper() {
-  // TODO: instead of this (or in addition) scale svg before putting it into client canvas
-  const actualWidth = paper.view.viewSize.width;
-  const actualHeight = paper.view.viewSize.height;
-  const scaleX = actualWidth / width.value;
-  const scaleY = actualHeight / height.value;
-  paper.view.matrix.reset();
-  const translateX = (actualWidth - width.value * Math.min(scaleX, scaleY)) / 2;
-  const translateY =
-    (actualHeight - height.value * Math.min(scaleX, scaleY)) / 2;
-  paper.view.translate(new paper.Point(translateX, translateY));
-  paper.view.scale(Math.min(scaleX, scaleY));
+  // TODO: load fow from api
+  // TODO: store fow in database
+  // TODO: when transmitting fow to client also send local canvas size -> in player view scale svg to playerview local canvas size
+  // TODO: in player/dm view: when changing view port size -> re init paper with canvas..
 }
 
 useEventListener('keydown', (e: KeyboardEvent) => {
@@ -179,13 +192,17 @@ useEventListener('keydown', (e: KeyboardEvent) => {
     addFow.value = !addFow.value;
   }
 });
+
+useEventListener('resize', (e) => {
+  initCanvas(imageRef); // TODO: wait for rezising to end (not every pixel) -> also fix this in playerview
+});
 </script>
 
 <template>
   <div :key="imagePath" ref="containerRef" class="center">
     <template v-if="hash">
       <img ref="imageRef" :src="imagePath" />
-      <canvas ref="canvasRef" :width="width" :height="height" resize="true" />
+      <canvas ref="canvasRef" :width="width" :height="height" hidpi="off" />
       <div ref="rectangleRef" class="rectangle" />
       <div
         class="indicator"
@@ -204,7 +221,7 @@ img {
   max-height: 100vh;
 }
 
-canvas[resize] {
+canvas {
   position: absolute;
   background-color: red;
   opacity: 0.5;
@@ -216,6 +233,7 @@ canvas[resize] {
   justify-content: center;
   align-items: center;
   height: 100vh;
+  background-color: blue;
 }
 
 .rectangle {
