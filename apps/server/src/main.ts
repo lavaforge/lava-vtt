@@ -22,21 +22,21 @@ ServiceContainer.set('DisplayStore', DisplayStore);
 
 const app = express();
 app.use((req, res, next) => {
-  // TODO: Fix for production!!!!!
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Origin,X-Requested-With,Content-Type,Accept',
-  );
-  next();
+    // TODO: Fix for production!!!!!
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Origin,X-Requested-With,Content-Type,Accept',
+    );
+    next();
 });
 app.use(express.json());
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: {
-    origin: '*',
-  },
+    cors: {
+        origin: '*',
+    },
 });
 
 const conduit = new BackendConduit(io);
@@ -46,5 +46,5 @@ app.use('/api', apiRouter);
 setupFowConduit();
 
 httpServer.listen(port, async () => {
-  console.log('listening on *:3000');
+    console.log('listening on *:3000');
 });

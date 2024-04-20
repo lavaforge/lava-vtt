@@ -1,45 +1,45 @@
 {
-  "root": true,
-  "ignorePatterns": ["**/*"],
-  "plugins": ["@nx", "prettier", "sort-keys-fix", "typescript-sort-keys"],
-  "overrides": [
-    {
-      "files": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.vue"],
-      "extends": ["plugin:prettier/recommended"],
-      "rules": {
-        "@nx/enforce-module-boundaries": [
-          "error",
-          {
-            "enforceBuildableLibDependency": true,
-            "allow": [],
-            "depConstraints": [
-              {
-                "sourceTag": "*",
-                "onlyDependOnLibsWithTags": ["*"]
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": ["*.ts", "*.tsx"],
-      "extends": ["plugin:@nx/typescript"],
-      "rules": {
-        "sort-keys-fix/sort-keys-fix": "error",
-        "typescript-sort-keys/interface": "error",
-        "typescript-sort-keys/string-enum": "error",
-        "@typescript-eslint/no-unsafe-assignment": "error",
-        "@typescript-eslint/no-unsafe-call": "error",
-        "@typescript-eslint/no-unsafe-member-access": "error",
-        "@typescript-eslint/no-unsafe-return": "error",
-        "@typescript-eslint/no-unsafe-argument": "error"
-      }
-    },
-    {
-      "files": ["*.js", "*.jsx"],
-      "extends": ["plugin:@nx/javascript"],
-      "rules": {}
-    }
-  ]
+    "root": true,
+    "ignorePatterns": ["**/*"],
+    "plugins": ["@nx", "prettier", "sort-keys-fix", "typescript-sort-keys"],
+    "overrides": [
+        {
+            "files": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.vue"],
+            "extends": ["plugin:prettier/recommended"],
+            "rules": {
+                "@nx/enforce-module-boundaries": [
+                    "error",
+                    {
+                        "enforceBuildableLibDependency": true,
+                        "allow": [],
+                        "depConstraints": [
+                            {
+                                "sourceTag": "*",
+                                "onlyDependOnLibsWithTags": ["*"]
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["*.ts", "*.tsx"],
+            "extends": ["plugin:@nx/typescript"],
+            "rules": {
+                "sort-keys-fix/sort-keys-fix": "error",
+                "typescript-sort-keys/interface": "error",
+                "typescript-sort-keys/string-enum": "error",
+                "@typescript-eslint/no-unsafe-assignment": "error",
+                "@typescript-eslint/no-unsafe-call": "error",
+                "@typescript-eslint/no-unsafe-member-access": "error",
+                "@typescript-eslint/no-unsafe-return": "error",
+                "@typescript-eslint/no-unsafe-argument": "error"
+            }
+        },
+        {
+            "files": ["*.js", "*.jsx"],
+            "extends": ["plugin:@nx/javascript"],
+            "rules": {}
+        }
+    ]
 }

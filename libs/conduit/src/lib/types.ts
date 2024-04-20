@@ -11,33 +11,33 @@ export type HasResponse = { responseSchema: z.ZodSchema };
  * The type of the lore schema for a given vein
  */
 export type LoreSchema<V extends Veins> = z.infer<
-  (typeof veins)[V]['loreSchema']
+    (typeof veins)[V]['loreSchema']
 >;
 
 /**
  * The type of the response schema for a given vein
  */
 export type ResponseSchema<V extends Veins> =
-  (typeof veins)[V] extends HasResponse
-    ? z.infer<(typeof veins)[V]['responseSchema']>
-    : never;
+    (typeof veins)[V] extends HasResponse
+        ? z.infer<(typeof veins)[V]['responseSchema']>
+        : never;
 
 /**
  * Zod schema for the names of veins
  */
 export const zodVeins = z.custom<Veins>(
-  (val) => typeof val === 'string' && val in veins,
+    (val) => typeof val === 'string' && val in veins,
 );
 
 /**
  * Zod schema for a generic glyph that gets sent via the conduit
  */
 export const zodGlyph = z.object({
-  from: z.literal('nexus').or(zodLavaName),
-  lore: z.unknown(),
-  msgNum: z.string(),
-  target: z.union([z.literal('broadcast'), z.literal('nexus'), zodLavaName]),
-  vein: z.string(),
+    from: z.literal('nexus').or(zodLavaName),
+    lore: z.unknown(),
+    msgNum: z.string(),
+    target: z.union([z.literal('broadcast'), z.literal('nexus'), zodLavaName]),
+    vein: z.string(),
 });
 
 /**

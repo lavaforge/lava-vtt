@@ -1,15 +1,15 @@
 {
-  "compileOnSave": false,
-  "compilerOptions": {
-    "moduleResolution": "bundler",
-    "target": "esnext",
-    "module": "ESNext",
-    "lib": ["esnext", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "paths": {
-      "conduit": ["./libs/conduit/src/index.ts"],
-      "shared": ["./libs/shared/src/index.ts"]
+    "compileOnSave": false,
+    "compilerOptions": {
+        "moduleResolution": "bundler",
+        "target": "esnext",
+        "module": "ESNext",
+        "lib": ["esnext", "DOM", "DOM.Iterable"],
+        "skipLibCheck": true,
+        "strictNullChecks": true,
+        "paths": {
+            "conduit": ["./libs/conduit/src/index.ts"],
+            "shared": ["./libs/shared/src/index.ts"]
+        }
     }
-  }
 }

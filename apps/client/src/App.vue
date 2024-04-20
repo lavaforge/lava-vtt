@@ -6,8 +6,8 @@ const isPlayerView = !window.location.search.includes('admin');
 </script>
 
 <template>
-  <PlayerView v-if="isPlayerView" />
-  <DmView v-else />
+    <PlayerView v-if="isPlayerView" />
+    <DmView v-else />
 </template>
 
 <style scoped></style>

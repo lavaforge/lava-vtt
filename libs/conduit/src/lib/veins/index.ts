@@ -7,15 +7,15 @@ import { fowUpdate } from './schemas/fowUpdate';
  * The available veins to send glyphs through
  */
 export const veins = {
-  fowUpdate,
-  imageHash,
-  requestFow,
+    fowUpdate,
+    imageHash,
+    requestFow,
 } as const satisfies VeinDefinition;
 
 export type Veins = keyof typeof veins;
 
 type VeinDefinition = Record<
-  string,
-  | { loreSchema: ZodSchema }
-  | { loreSchema: ZodSchema; responseSchema: ZodSchema }
+    string,
+    | { loreSchema: ZodSchema }
+    | { loreSchema: ZodSchema; responseSchema: ZodSchema }
 >;

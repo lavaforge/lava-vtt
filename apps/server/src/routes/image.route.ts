@@ -7,40 +7,38 @@ import { fileTypeFromBuffer } from 'file-type';
 const router = Router();
 
 router.get('/:hash', async (req, res) => {
-  const db = scg('Db');
-  const hash = req.params.hash;
+    const db = scg('Db');
+    const hash = req.params.hash;
 
-  const image = await db.collection('images').findOne({ hash });
+    const image = await db.collection('images').findOne({ hash });
 
-  if (image === null) {
-    res.status(404).send('Not found');
-    return;
-  }
+    if (image === null) {
+        res.status(404).send('Not found');
+        return;
+    }
 
-  res
-    .set(
-      'Content-Type',
-      (await fileTypeFromBuffer(image.content.buffer))?.mime ?? 'image/png',
-    )
-    .send(image.content.buffer);
+    res.set(
+        'Content-Type',
+        (await fileTypeFromBuffer(image.content.buffer))?.mime ?? 'image/png',
+    ).send(image.content.buffer);
 });
 
 router.post('/', raw({ limit: '15mb' }), async (req, res) => {
-  const hash = hashBuffer(req.body);
+    const hash = hashBuffer(req.body);
 
-  const db = scg('Db');
+    const db = scg('Db');
 
-  const binary = new Binary(req.body);
+    const binary = new Binary(req.body);
 
-  await db
-    .collection('images')
-    .updateOne(
-      { hash },
-      { $setOnInsert: { content: binary, hash } },
-      { upsert: true },
-    );
+    await db
+        .collection('images')
+        .updateOne(
+            { hash },
+            { $setOnInsert: { content: binary, hash } },
+            { upsert: true },
+        );
 
-  res.send(hash);
+    res.send(hash);
 });
 
 export { router as imageRouter };

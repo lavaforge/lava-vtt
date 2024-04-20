@@ -1,14 +1,14 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "exclude": [],
-  "include": [
-    "src/**/*.ts",
-    "jest.config.ts",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/**/*.d.ts"
-  ],
-  "compilerOptions": {
-    "esModuleInterop": true
-  }
+    "extends": "../../tsconfig.base.json",
+    "exclude": [],
+    "include": [
+        "src/**/*.ts",
+        "jest.config.ts",
+        "src/**/*.test.ts",
+        "src/**/*.spec.ts",
+        "src/**/*.d.ts"
+    ],
+    "compilerOptions": {
+        "esModuleInterop": true
+    }
 }

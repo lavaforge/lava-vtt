@@ -2,8 +2,8 @@
 
 A virtual table-top, that is first and foremost designed to be:
 
-- used for non-virtual or in-person play, to enhance the playing experience of your favourite TTRPG.
-- integrated closely with obsidian.md, since that is, what we are using for DMing.
+-   used for non-virtual or in-person play, to enhance the playing experience of your favourite TTRPG.
+-   integrated closely with obsidian.md, since that is, what we are using for DMing.
 
 ## Running the App
 
@@ -56,35 +56,35 @@ lava-vtt admin interface.
 
 ### Raspberry Pi Imager
 
-- Download Raspberry Pi Imager
-- Insert SD Card
-- Start Raspberry Pi Imager
-  - Select the fitting Raspberry device
-  - OS: Raspberry Pi OS (Legacy, 32-bit)
-  - Select SD storage
-- Setup Raspberry Pi:
-  - Make sure to call the user "admin"
-    - Configuring Wi-Fi is optional but recommended
+-   Download Raspberry Pi Imager
+-   Insert SD Card
+-   Start Raspberry Pi Imager
+    -   Select the fitting Raspberry device
+    -   OS: Raspberry Pi OS (Legacy, 32-bit)
+    -   Select SD storage
+-   Setup Raspberry Pi:
+    -   Make sure to call the user "admin"
+        -   Configuring Wi-Fi is optional but recommended
 
 ![Raspberry Pi Imager Setup](docs/imager_setup.png)
 
-- Wait for the installation to finish
+-   Wait for the installation to finish
 
 ### Raspberry Pi
 
-- Insert SD card into Raspberry
-- Connect the camera module
-- Connect a screen + mouse + keyboard (mouse + keyboard only needed for first time setup)
-- Boot the Raspberry
-- Run the setup script:
+-   Insert SD card into Raspberry
+-   Connect the camera module
+-   Connect a screen + mouse + keyboard (mouse + keyboard only needed for first time setup)
+-   Boot the Raspberry
+-   Run the setup script:
 
 ```
 curl -s https://raw.githubusercontent.com/lavaforge/lava-vtt/main/scripts/setup.sh | sudo bash
 ```
 
-- After the script is finished the Raspberry Pi will reboot
-- The start script is then located in `/lava`
-- The start script now also starts automatically on boot
+-   After the script is finished the Raspberry Pi will reboot
+-   The start script is then located in `/lava`
+-   The start script now also starts automatically on boot
 
 When the Raspberry Pi is started in a new location where it
 does not have a Wi-Fi connection you will be prompted to show

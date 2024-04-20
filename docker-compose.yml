@@ -1,33 +1,33 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  mongo:
-    image: mongo:latest
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: rootuser
-      MONGO_INITDB_ROOT_PASSWORD: rootpass
-    volumes:
-      - mongodb_data:/data/db
-  webserver:
-    build: ./
-    container_name: mywebserver
-    ports:
-      - "3000:3000"
-      - "5173:5173"
-    environment:
-      PORT: 3000
-      MONGO_INITDB_ROOT_USERNAME: rootuser
-      MONGO_INITDB_ROOT_PASSWORD: rootpass
-      MONGODB_HOSTNAME: mongo
-    depends_on:
-      - mongo
-    volumes:
-      - ./:/app
-      - /app/node_modules
+    mongo:
+        image: mongo:latest
+        container_name: mongodb
+        ports:
+            - '27017:27017'
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: rootuser
+            MONGO_INITDB_ROOT_PASSWORD: rootpass
+        volumes:
+            - mongodb_data:/data/db
+    webserver:
+        build: ./
+        container_name: mywebserver
+        ports:
+            - '3000:3000'
+            - '5173:5173'
+        environment:
+            PORT: 3000
+            MONGO_INITDB_ROOT_USERNAME: rootuser
+            MONGO_INITDB_ROOT_PASSWORD: rootpass
+            MONGODB_HOSTNAME: mongo
+        depends_on:
+            - mongo
+        volumes:
+            - ./:/app
+            - /app/node_modules
 
 volumes:
-  mongodb_data:
-    driver: local
+    mongodb_data:
+        driver: local
