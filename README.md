@@ -2,8 +2,20 @@
 
 A virtual table-top, that is first and foremost designed to be:
 
--   used for non-virtual or in-person play, to enhance the playing experience of your favourite TTRPG.
--   integrated closely with obsidian.md, since that is, what we are using for DMing.
+-   used for non-virtual or in-person play, to enhance the playing experience of
+    your favourite TTRPG.
+-   integrated closely with obsidian.md, since that is what we are using for
+    DMing.
+
+## Self-Hosting
+
+At the moment, self-hosting is not yet fully automated. The following
+instructions can be used to run it in dev-mode locally. Self-hosting should be
+possible, although you need to figure out yourself how to do that.
+
+Of course, we will provide more detailed instructions in the future. Ideally, we
+would like to provide a docker image as well, so that you can easily run it on
+your own server.
 
 ## Running the App
 
@@ -38,17 +50,16 @@ nx run obsidian-lava-vtt-adapter:dev
 
 ## Raspberry Pi Setup
 
-This section outlines the steps required to transform a Raspberry Pi
-into a smart, QR-code-reading client for lava-vtt.
+This section outlines the steps required to transform a Raspberry Pi into a
+smart, QR-code-reading client for lava-vtt.
 
-The Raspberry Pi must be equipped with a camera module.
-Upon starting, the Pi will prompt the user, through the camera,
-to scan two QR codes: one for connecting to a Wi-Fi network (if it does not
-have a network connection) and another
-for a lava-vtt server URL. Once both QR codes have been successfully scanned,
-the Raspberry Pi will launch a web browser to display the website
-specified by the URL. This method is perfect for those looking to
-use a Raspberry Pi as a portable lava-vtt client.
+The Raspberry Pi must be equipped with a camera module. Upon starting, the Pi
+will prompt the user, through the camera, to scan two QR codes: one for
+connecting to a Wi-Fi network (if it does not have a network connection) and
+another for a lava-vtt server URL. Once both QR codes have been successfully
+scanned, the Raspberry Pi will launch a web browser to display the website
+specified by the URL. This method is perfect for those looking to use a
+Raspberry Pi as a portable lava-vtt client.
 
 The URL presented in QR code form as the lava-vtt server must be in the format
 `lava=SERVER_HOSTNAME`. You will also find the lava-vtt server QR code in the
@@ -74,7 +85,8 @@ lava-vtt admin interface.
 
 -   Insert SD card into Raspberry
 -   Connect the camera module
--   Connect a screen + mouse + keyboard (mouse + keyboard only needed for first time setup)
+-   Connect a screen + mouse + keyboard (mouse + keyboard only needed for first
+    time setup)
 -   Boot the Raspberry
 -   Run the setup script:
 
@@ -86,7 +98,7 @@ curl -s https://raw.githubusercontent.com/lavaforge/lava-vtt/main/scripts/setup.
 -   The start script is then located in `/lava`
 -   The start script now also starts automatically on boot
 
-When the Raspberry Pi is started in a new location where it
-does not have a Wi-Fi connection you will be prompted to show
-a Wi-Fi QR code. This way you won't have to carry a keyboard
-when taking the Raspberry Pi client somewhere else.
+When the Raspberry Pi is started in a new location where it does not have a
+Wi-Fi connection you will be prompted to show a Wi-Fi QR code. This way you
+won't have to carry a keyboard when taking the Raspberry Pi client somewhere
+else.
