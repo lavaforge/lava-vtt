@@ -36,6 +36,7 @@ function initDrawingTools() {
 
     tool.onMouseDrag = (event: PaperMouseEvent) => {
         if (path) {
+            path.strokeColor = new paper.Color('black');
             path.add(event.point);
         }
     };
@@ -211,7 +212,6 @@ canvas {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: blue;
 }
 
 .rectangle {

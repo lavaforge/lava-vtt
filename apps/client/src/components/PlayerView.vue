@@ -168,8 +168,6 @@ img {
 
 canvas {
     position: absolute;
-    background-color: red;
-    opacity: 0.5;
 }
 
 .center {
@@ -178,7 +176,6 @@ canvas {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: blue;
 }
 
 .mf {
