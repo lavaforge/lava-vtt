@@ -4,6 +4,9 @@ import { useMapStore } from '../logic/useMapStore';
 import { nextTick, ref, type Ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
+import { updateFOW } from '../logic/fowScaling';
+
+let resizeTimer: string | number | NodeJS.Timeout | undefined;
 
 const mapStore = useMapStore();
 const { imagePath, fowData } = storeToRefs(mapStore);
@@ -21,7 +24,14 @@ function initPaper() {
     if (canvasRef.value) {
         paper.setup(canvasRef.value);
         initDrawingTools();
+        loadExistingFow();
     }
+}
+
+function loadExistingFow() {
+    let data = mapStore.fowData;
+    if (data == undefined) return;
+    updateFOW(data);
 }
 
 function initDrawingTools() {
@@ -36,7 +46,9 @@ function initDrawingTools() {
 
     tool.onMouseDrag = (event: PaperMouseEvent) => {
         if (path) {
-            path.strokeColor = new paper.Color('black');
+            addFow.value
+                ? (path.strokeColor = new paper.Color('black'))
+                : (path.strokeColor = new paper.Color('red'));
             path.add(event.point);
         }
     };
@@ -67,6 +79,7 @@ function addPathToFow(path: paper.Path) {
         }
     });
     combinedPath.fillColor = new paper.Color('black');
+    combinedPath.strokeColor = new paper.Color('black');
     paper.project.activeLayer.removeChildren();
     paper.project.activeLayer.addChild(combinedPath);
 }
@@ -89,6 +102,7 @@ function removePathFromFow(path: paper.Path) {
     });
     paper.project.activeLayer.removeChildren();
     substractedPath.fillColor = new paper.Color('black');
+    substractedPath.strokeColor = new paper.Color('black');
     paper.project.activeLayer.addChild(substractedPath);
 }
 
@@ -159,8 +173,6 @@ async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
 
     // TODO: load fow from api
     // TODO: store fow in database
-    // TODO: when transmitting fow to client also send local canvas size -> in player view scale svg to playerview local canvas size
-    // TODO: in player/dm view: when changing view port size -> re init paper with canvas..
 }
 
 useEventListener('keydown', (e: KeyboardEvent) => {
@@ -170,7 +182,10 @@ useEventListener('keydown', (e: KeyboardEvent) => {
 });
 
 useEventListener('resize', () => {
-    initCanvas(imageRef); // TODO: wait for resizing to end (not every pixel) -> also fix this in playerview
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+        initCanvas(imageRef);
+    }, 100);
 });
 </script>
 

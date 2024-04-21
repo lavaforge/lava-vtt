@@ -5,9 +5,13 @@ import { useEventListener, useWakeLock } from '@vueuse/core';
 import { storeToRefs } from 'pinia';
 import { useMapStore } from '../logic/useMapStore';
 import paper from 'paper';
-import type { LoreSchema } from 'conduit';
+import { updateFOW } from '../logic/fowScaling';
 
-const { imagePath, fowData } = storeToRefs(useMapStore());
+let resizeTimer: string | number | NodeJS.Timeout | undefined;
+
+const mapStore = useMapStore();
+
+const { imagePath, fowData } = storeToRefs(mapStore);
 
 const imageRef = ref<HTMLImageElement | null>(null);
 let instance: ReturnType<typeof panzoom> | null = null;
@@ -20,7 +24,14 @@ const containerRef = ref<HTMLDivElement | null>(null);
 function initPaper() {
     if (canvasRef.value) {
         paper.setup(canvasRef.value);
+        loadExistingFow();
     }
+}
+
+function loadExistingFow() {
+    let data = mapStore.fowData;
+    if (data == undefined) return;
+    updateFOW(data);
 }
 
 const { request, release } = useWakeLock();
@@ -84,7 +95,10 @@ async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
 }
 
 useEventListener('resize', () => {
-    initCanvas(imageRef);
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+        initCanvas(imageRef);
+    }, 100);
 });
 
 watch(fowData, (newFowData) => {
@@ -92,47 +106,6 @@ watch(fowData, (newFowData) => {
         updateFOW(newFowData);
     }
 });
-
-function updateFOW(data: LoreSchema<'paperFow'>) {
-    let scalePositionQuadruple = getScaleAndPositionFromPathData(data);
-    let path: paper.CompoundPath = new paper.CompoundPath(data.svgPath);
-    path.fillColor = new paper.Color('black');
-    scaleAndPositionPath(path, scalePositionQuadruple);
-
-    getActiveLayer().removeChildren();
-    getActiveLayer().addChild(path);
-}
-
-function scaleAndPositionPath(
-    path: paper.CompoundPath,
-    scalePositionQuadruple: number[] | null,
-) {
-    if (
-        scalePositionQuadruple == null ||
-        scalePositionQuadruple[0] == undefined ||
-        scalePositionQuadruple[1] == undefined ||
-        scalePositionQuadruple[2] == undefined ||
-        scalePositionQuadruple[3] == undefined
-    )
-        return;
-
-    let newCanvasWidth = paper.view.size.width;
-    let newCanvasHeight = paper.view.size.height;
-    if (newCanvasWidth == undefined || newCanvasHeight == undefined) return;
-    let scaleX = newCanvasWidth / scalePositionQuadruple[0];
-    let scaleY = newCanvasHeight / scalePositionQuadruple[1];
-    let uniformScale = Math.min(scaleX, scaleY);
-    path.position = new paper.Point(
-        scalePositionQuadruple[2] * scaleX,
-        scalePositionQuadruple[3] * scaleY,
-    );
-    path.scale(uniformScale);
-}
-
-function getScaleAndPositionFromPathData(pathData: LoreSchema<'paperFow'>) {
-    const { width, height, posX, posY } = pathData.canvas;
-    return [width, height, posX, posY];
-}
 
 function getActiveLayer() {
     return paper.project.activeLayer;
