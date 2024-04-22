@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia';
-import { computed, ref, shallowReadonly, watch } from 'vue';
+import { computed, ref, shallowReadonly } from 'vue';
 import { scg } from 'ioc-service-container';
-import type { LoreSchema } from 'conduit';
 import type { FogOfWar } from '@base';
+import { refWithControl } from '@vueuse/core';
 
 export const useMapStore = defineStore('map', () => {
     const conduit = scg('conduit');
     const apiUrl = scg('apiUrl');
 
     const currentHash = ref<string>();
-    const currentFowData = ref<FogOfWar>();
+    const currentFowData = refWithControl<FogOfWar | undefined>(undefined);
 
     conduit.attune('imageHash', async (lore) => {
         const newHash = lore.hash;
@@ -42,7 +42,7 @@ export const useMapStore = defineStore('map', () => {
     function setFow(fowData: FogOfWar) {
         if (!currentHash.value) return;
 
-        currentFowData.value = fowData;
+        currentFowData.lay(fowData);
         conduit.broadcast('fowUpdate', {
             hash: currentHash.value,
             data: fowData,
