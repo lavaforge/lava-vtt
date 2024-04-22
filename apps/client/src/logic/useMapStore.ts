@@ -39,10 +39,10 @@ export const useMapStore = defineStore('map', () => {
         currentHash.value ? `${apiUrl}/api/image/${currentHash.value}` : '',
     );
 
-    function setFow(fowData: FogOfWar) {
+    function setFow(fowData: FogOfWar, triggering: boolean = true) {
         if (!currentHash.value) return;
 
-        currentFowData.lay(fowData);
+        currentFowData.set(fowData, triggering);
         conduit.broadcast('fowUpdate', {
             hash: currentHash.value,
             data: fowData,

@@ -92,15 +92,18 @@ function sendPathUpdate() {
         firstChild instanceof paper.CompoundPath ||
         firstChild instanceof paper.Path
     ) {
-        mapStore.setFow({
-            svgPath: firstChild.pathData,
-            canvas: {
-                width: paper.view.size.width,
-                height: paper.view.size.height,
-                posX: firstChild.position.x,
-                posY: firstChild.position.y,
+        mapStore.setFow(
+            {
+                svgPath: firstChild.pathData,
+                canvas: {
+                    width: paper.view.size.width,
+                    height: paper.view.size.height,
+                    posX: firstChild.position.x,
+                    posY: firstChild.position.y,
+                },
             },
-        });
+            false,
+        );
     }
 }
 
