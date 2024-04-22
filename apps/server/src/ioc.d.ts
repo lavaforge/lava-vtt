@@ -1,7 +1,7 @@
 // Create the mapping between ServiceId and Service
 import type { Db } from 'mongodb';
 import { FowService } from './services/fow.service';
-import { BackendConduit } from './conduit';
+import { BackendConduit } from './conduit/BackendConduit';
 import { DisplayStore } from './display.store';
 
 type IoCTypes = {

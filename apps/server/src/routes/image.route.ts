@@ -1,8 +1,8 @@
 import { raw, Router } from 'express';
-import { hashBuffer } from 'shared';
 import { scg } from 'ioc-service-container';
 import { Binary } from 'mongodb';
 import { fileTypeFromBuffer } from 'file-type';
+import { createHash } from 'crypto';
 
 const router = Router();
 
@@ -42,3 +42,7 @@ router.post('/', raw({ limit: '15mb' }), async (req, res) => {
 });
 
 export { router as imageRouter };
+
+export function hashBuffer(buffer: Buffer): string {
+    return createHash('sha1').update(buffer).digest('hex');
+}

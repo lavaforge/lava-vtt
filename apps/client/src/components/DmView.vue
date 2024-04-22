@@ -6,8 +6,6 @@ import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import { updateFOW } from '../logic/fowScaling';
 
-let resizeTimer: string | number | NodeJS.Timeout | undefined;
-
 const mapStore = useMapStore();
 const { imagePath, fowData } = storeToRefs(mapStore);
 
@@ -21,11 +19,13 @@ const { x: mouseX, y: mouseY } = useMouse();
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
 
 function initPaper() {
-    if (canvasRef.value) {
-        paper.setup(canvasRef.value);
-        initDrawingTools();
-        loadExistingFow();
+    if (!canvasRef.value) {
+        return;
     }
+
+    paper.setup(canvasRef.value);
+    initDrawingTools();
+    loadExistingFow();
 }
 
 function loadExistingFow() {
@@ -181,6 +181,7 @@ useEventListener('keydown', (e: KeyboardEvent) => {
     }
 });
 
+let resizeTimer: ReturnType<typeof setTimeout> | undefined;
 useEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {

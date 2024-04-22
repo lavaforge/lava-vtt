@@ -1,17 +1,17 @@
 import { scg } from 'ioc-service-container';
 
-export function setupFowConduit(): void {
+export function attuneToFogOfWarVeins(): void {
     const conduit = scg('conduit');
 
-    conduit.attune('requestFow', async (lore, respond) => {
+    conduit.attune('fowRequest', async (lore, respond) => {
         const fowService = scg('FowService');
         const fowData = await fowService.getFow(lore.hash);
 
-        return respond({ fow: fowData, hash: lore.hash });
+        return respond({ data: fowData, hash: lore.hash });
     });
 
     conduit.attune('fowUpdate', async (lore) => {
         const fowService = scg('FowService');
-        await fowService.setFow(lore.hash, lore.fow);
+        await fowService.setFow(lore.hash, lore.data);
     });
 }

@@ -5,9 +5,9 @@ import { MongoClient } from 'mongodb';
 import { apiRouter } from './routes/api.route';
 import { ServiceContainer } from 'ioc-service-container';
 import { FowService } from './services/fow.service';
-import { BackendConduit } from './conduit';
+import { BackendConduit } from './conduit/BackendConduit';
 import { DisplayStore } from './display.store';
-import { setupFowConduit } from './routes/fow.route';
+import { attuneToFogOfWarVeins } from './conduit/fowAttunement';
 
 const port = process.env.PORT || 3000;
 
@@ -16,6 +16,7 @@ const dbName = 'lava-vtt-db';
 const client = new MongoClient(url);
 await client.connect();
 const db = client.db(dbName);
+
 ServiceContainer.set('Db', () => db);
 ServiceContainer.set('FowService', FowService);
 ServiceContainer.set('DisplayStore', DisplayStore);
@@ -42,8 +43,9 @@ const io = new Server(httpServer, {
 const conduit = new BackendConduit(io);
 ServiceContainer.set('conduit', () => conduit);
 
+attuneToFogOfWarVeins();
+
 app.use('/api', apiRouter);
-setupFowConduit();
 
 httpServer.listen(port, async () => {
     console.log('listening on *:3000');

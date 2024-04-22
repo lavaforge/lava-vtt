@@ -7,16 +7,12 @@ import { useMapStore } from '../logic/useMapStore';
 import paper from 'paper';
 import { updateFOW } from '../logic/fowScaling';
 
-let resizeTimer: string | number | NodeJS.Timeout | undefined;
-
 const mapStore = useMapStore();
-
 const { imagePath, fowData } = storeToRefs(mapStore);
 
 const imageRef = ref<HTMLImageElement | null>(null);
 let instance: ReturnType<typeof panzoom> | null = null;
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const someText = ref('');
 const width = ref(0);
 const height = ref(0);
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -81,7 +77,7 @@ useEventListener(imageRef, 'load', async () => {
 
 async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
     if (!imageRef.value || !canvasRef.value) {
-        throw new Error('no image or canvas');
+        return;
     }
     height.value = imageRef.value.height;
     width.value = imageRef.value.width;
@@ -94,6 +90,7 @@ async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
     initPaper();
 }
 
+let resizeTimer: ReturnType<typeof setTimeout> | undefined = undefined;
 useEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
@@ -102,14 +99,12 @@ useEventListener('resize', () => {
 });
 
 watch(fowData, (newFowData) => {
-    if (newFowData) {
-        updateFOW(newFowData);
+    if (!newFowData || !canvasRef.value || !imageRef.value) {
+        return;
     }
-});
 
-function getActiveLayer() {
-    return paper.project.activeLayer;
-}
+    updateFOW(newFowData);
+});
 </script>
 
 <template>
@@ -122,7 +117,6 @@ function getActiveLayer() {
                 :width="width"
                 hidpi="off"
             />
-            <p class="mf">{{ someText }}</p>
         </template>
         <div v-else>no image loaded</div>
     </div>
@@ -149,10 +143,5 @@ canvas {
     justify-content: center;
     align-items: center;
     height: 100vh;
-}
-
-.mf {
-    position: absolute;
-    background-color: lime;
 }
 </style>

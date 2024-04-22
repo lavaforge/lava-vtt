@@ -7,8 +7,10 @@
         "noImplicitOverride": true,
         "noPropertyAccessFromIndexSignature": true,
         "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true
+        "noFallthroughCasesInSwitch": true,
+        "outDir": "../../dist/out-tsc",
+        "declaration": true,
+        "types": ["node"]
     },
-    "include": ["src/**/*.ts"],
-    "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"]
+    "include": ["src/**/*.ts"]
 }

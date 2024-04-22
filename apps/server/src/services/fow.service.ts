@@ -1,10 +1,11 @@
 import { scg } from 'ioc-service-container';
 import { Db } from 'mongodb';
+import { type FogOfWar, fogOfWarSchema } from '@base';
 
 export class FowService {
     private readonly db: Db = scg('Db');
 
-    async setFow(hash: string, fow: number[]) {
+    async setFow(hash: string, fow: FogOfWar) {
         const collection = this.db.collection('fow');
         await collection.updateOne(
             { hash },
@@ -13,9 +14,13 @@ export class FowService {
         );
     }
 
-    async getFow(hash: string): Promise<number[] | null> {
+    async getFow(hash: string): Promise<FogOfWar | undefined> {
         const collection = this.db.collection('fow');
-        const fow = await collection.findOne({ hash });
-        return fow?.fow ?? null;
+        const fowDocument = await collection.findOne({ hash });
+
+        const fowData: unknown = fowDocument?.fow;
+        const fowParseResult = fogOfWarSchema.safeParse(fowData);
+
+        return fowParseResult.success ? fowParseResult.data : undefined;
     }
 }

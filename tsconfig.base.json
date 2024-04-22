@@ -8,8 +8,8 @@
         "skipLibCheck": true,
         "strictNullChecks": true,
         "paths": {
-            "conduit": ["./libs/conduit/src/index.ts"],
-            "shared": ["./libs/shared/src/index.ts"]
+            "@base": ["./libs/base/src/index.ts"],
+            "conduit": ["./libs/conduit/src/index.ts"]
         }
     }
 }
