@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMapStore } from '../logic/useMapStore';
 import { ref } from 'vue';
-import { onKeyStroke, useMouse } from '@vueuse/core';
+import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
 
@@ -116,8 +116,10 @@ function getActiveLayer() {
     return paper.project.activeLayer;
 }
 
-onKeyStroke('x', () => {
-    addFow.value = !addFow.value;
+useEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'x') {
+        addFow.value = !addFow.value;
+    }
 });
 </script>
 
