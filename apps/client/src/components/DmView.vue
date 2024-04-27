@@ -10,6 +10,28 @@ const mapStore = useMapStore();
 const addFow = ref(false);
 const fogOfWarColor = '#000000A0';
 
+const someButtonColor = '#0000ff';
+
+var counter = 0;
+var counterMax = 10;
+
+function generateWholeButtonBar(amount: any) {
+    for (let i = 0; i <= amount; i++) {}
+}
+function generateButtonColor() {
+    const red = counter / counterMax;
+    const blue = 1 - counter / counterMax;
+
+    //console.log(counter);
+    counter++;
+    if (counter > counterMax) counter = 0;
+
+    return 'rgb(' + 255 * red + ',0,' + 255 * blue + ')';
+    //return "rgb(0,0,"+(255*0.5)+")";
+}
+
+const btnColor = ref(generateButtonColor());
+
 const { x: mouseX, y: mouseY } = useMouse();
 
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
@@ -133,12 +155,74 @@ useEventListener('keydown', (e: KeyboardEvent) => {
             class="indicator"
             :style="{ 'background-color': addFow ? 'black' : 'white' }"
         />
+        <a class="button-bar">
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                A
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                B
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                C
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                D
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                E
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                F
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                G
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                H
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                I
+            </button>
+            <button
+                class="cool-button"
+                :style="{ 'background-color': generateButtonColor() }"
+            >
+                J
+            </button>
+        </a>
         <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
         <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .container {
     position: relative;
     display: flex;
@@ -173,5 +257,19 @@ useEventListener('keydown', (e: KeyboardEvent) => {
     width: 100%;
     height: 1px;
     top: v-bind(mouseY) px;
+}
+
+.button-bar {
+    position: fixed;
+    top: 0;
+}
+
+.cool-button {
+    border: none;
+    position: relative;
+    //background-color: rgb(255,255,0);
+    //background-color: v-bind(btnColor);
+    width: 100px;
+    height: 100px;
 }
 </style>

@@ -11,8 +11,7 @@
         "build:firefox": "wxt build -b firefox",
         "zip": "wxt zip",
         "zip:firefox": "wxt zip -b firefox",
-        "compile": "vue-tsc --noEmit",
-        "postinstall": "wxt prepare"
+        "compile": "vue-tsc --noEmit"
     },
     "dependencies": {
         "vue": "^3.4.0"
