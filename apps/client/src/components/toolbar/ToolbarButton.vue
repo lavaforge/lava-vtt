@@ -3,8 +3,9 @@ withDefaults(
     defineProps<{
         text: string;
         tooltipPos?: 'top' | 'bottom';
+        active?: boolean;
     }>(),
-    { tooltipPos: 'top' },
+    { tooltipPos: 'top', active: false },
 );
 
 defineEmits<{
@@ -16,6 +17,7 @@ defineEmits<{
     <button
         class="toolbar-button-host"
         @click="$emit('press')"
+        :class="{ active }"
     >
         <span>{{ text }}</span>
         <span :class="['tooltip', tooltipPos === 'top' ? 'top' : 'bottom']"
@@ -44,6 +46,10 @@ defineEmits<{
     border: none;
 
     cursor: pointer;
+
+    &.active {
+        font-size: 1.5rem;
+    }
 
     .tooltip {
         opacity: 0;

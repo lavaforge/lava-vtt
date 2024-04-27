@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMapStore } from '../logic/useMapStore';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
@@ -17,21 +17,26 @@ const addFow = ref(false);
 const fogOfWarColor = '#000000A0';
 const { x: mouseX, y: mouseY } = useMouse();
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
-let currentTool = Tool.Circle;
+const currentTool = ref<Tool>(Tool.FogOfWar);
 const paperTool = new paper.Tool();
 
 function changeDrawingTool() {
     // TODO: later let this be controlled by UI
-    if (currentTool == Tool.FogOfWar) {
-        currentTool = Tool.Circle;
+    if (currentTool.value === Tool.FogOfWar) {
+        currentTool.value = Tool.Circle;
     } else {
-        currentTool = Tool.FogOfWar;
+        currentTool.value = Tool.FogOfWar;
     }
     initDrawingTools();
 }
 
+function setDrawingTool(tool: Tool) {
+    currentTool.value = tool;
+    initDrawingTools();
+}
+
 function initDrawingTools() {
-    if (currentTool == Tool.Circle) {
+    if (currentTool.value === Tool.Circle) {
         initCircleTool();
     } else {
         initFogTool();
@@ -174,6 +179,17 @@ useEventListener('keydown', (e: KeyboardEvent) => {
 });
 
 const toolbarOpen = ref(false);
+
+const activeButton = computed(() =>
+    currentTool.value === Tool.FogOfWar ? '1' : '2',
+);
+function handleButtonPress(text: string) {
+    if (text === '1') {
+        setDrawingTool(Tool.FogOfWar);
+    } else if (text === '2') {
+        setDrawingTool(Tool.Circle);
+    }
+}
 </script>
 
 <template>
@@ -205,6 +221,8 @@ const toolbarOpen = ref(false);
         <Toolbar
             v-model:open="toolbarOpen"
             class="toolbar"
+            @button-press="handleButtonPress"
+            :active-button="activeButton"
         />
         <!--        <div-->
         <!--            class="indicator"-->

@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     open: boolean;
+    activeButton?: string;
 }>();
 
 const emit = defineEmits<{
@@ -82,7 +83,7 @@ function handlePress(text: string) {
         <ToolbarButton
             :key="btn.text"
             v-for="(btn, i) in buttons"
-            class="button"
+            :class="['button', { active: btn.text === props.activeButton }]"
             :style="{
                 transform: `translateX(${distances[i]})`,
                 opacity: opacity,
