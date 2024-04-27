@@ -7,6 +7,8 @@ import BaseView from './BaseView.vue';
 import { type FogOfWar } from '../../../../libs/base/src/lib/fogOfWar';
 import { scg } from 'ioc-service-container';
 import { useDetune } from '../logic/useDetune';
+import Toolbar from './toolbar/Toolbar.vue';
+import ToolbarButton from './toolbar/ToolbarButton.vue';
 
 enum Tool {
     FogOfWar,
@@ -20,30 +22,35 @@ const addFow = ref(false);
 const fogOfWarColor = '#000000A0';
 const { x: mouseX, y: mouseY } = useMouse();
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
-let currentTool = Tool.Circle;
+const currentTool = ref<Tool>(Tool.Circle);
 const paperTool = new paper.Tool();
 
 function changeDrawingTool() {
     // TODO: later let this be controlled by UI
 
-    switch (currentTool) {
+    switch (currentTool.value) {
         case Tool.FogOfWar:
-            currentTool = Tool.Circle;
+            currentTool.value = Tool.Circle;
             break;
         case Tool.Circle:
-            currentTool = Tool.Rectangle;
+            currentTool.value = Tool.Rectangle;
             break;
         case Tool.Rectangle:
-            currentTool = Tool.Arrow;
+            currentTool.value = Tool.Arrow;
             break;
         case Tool.Arrow:
-            currentTool = Tool.FogOfWar;
+            currentTool.value = Tool.FogOfWar;
     }
     initDrawingTools();
 }
 
+function setDrawingTool(tool: Tool) {
+    currentTool.value = tool;
+    initDrawingTools();
+}
+
 function initDrawingTools() {
-    switch (currentTool) {
+    switch (currentTool.value) {
         case Tool.FogOfWar:
             initFogTool();
             break;
@@ -534,21 +541,59 @@ function fromImgCoord(num: number, type: 'x' | 'y' | 'size') {
 
     return num * factor + add;
 }
+
+const toolbarOpen = ref(false);
+
+const activeButton = computed(() =>
+    currentTool.value === Tool.FogOfWar ? '1' : '2',
+);
+function handleButtonPress(text: string) {
+    if (text === '1') {
+        setDrawingTool(Tool.FogOfWar);
+    } else if (text === '2') {
+        setDrawingTool(Tool.Circle);
+    }
+}
 </script>
 
 <template>
-    <div ref="containerRef" class="container">
+    <div
+        ref="containerRef"
+        class="container"
+    >
         <BaseView
             ref="baseViewRef"
             @image-loaded="initDrawingTools"
             :fog-of-war-color="fogOfWarColor"
         />
         <div
-            class="indicator"
-            :style="{ 'background-color': addFow ? 'black' : 'white' }"
+            class="vertical-line"
+            :style="{ left: mouseX + 'px' }"
+        ></div>
+        <div
+            class="horizontal-line"
+            :style="{ top: mouseY + 'px' }"
+        ></div>
+        <Transition name="fade">
+            <ToolbarButton
+                v-if="!toolbarOpen"
+                class="toolbar-open-button"
+                @press="toolbarOpen = !toolbarOpen"
+                alt-text="="
+                tooltip="open toolbar"
+                tooltip-pos="bottom"
+            />
+        </Transition>
+        <Toolbar
+            v-model:open="toolbarOpen"
+            class="toolbar"
+            @button-press="handleButtonPress"
+            :active-button="activeButton"
         />
-        <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
-        <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
+        <!--        <div-->
+        <!--            class="indicator"-->
+        <!--            :style="{ 'background-color': addFow ? 'black' : 'white' }"-->
+        <!--        />-->
     </div>
     <div class="remote-control" v-if="showRemoteControl">
         <div class="single-control" v-for="name in names" :key="name">
@@ -577,13 +622,36 @@ function fromImgCoord(num: number, type: 'x' | 'y' | 'size') {
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
 .container {
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+}
+
+.toolbar {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.toolbar-open-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
 }
 
 .indicator {

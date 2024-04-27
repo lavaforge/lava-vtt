@@ -1,5 +1,6 @@
 {
     "singleQuote": true,
     "tabWidth": 4,
-    "proseWrap": "always"
+    "proseWrap": "always",
+    "singleAttributePerLine": true
 }
