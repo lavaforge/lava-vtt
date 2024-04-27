@@ -4,6 +4,8 @@ import { ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
+import Toolbar from './toolbar/Toolbar.vue';
+import ToolbarButton from './toolbar/ToolbarButton.vue';
 
 enum Tool {
     FogOfWar,
@@ -170,30 +172,77 @@ useEventListener('keydown', (e: KeyboardEvent) => {
         changeDrawingTool();
     }
 });
+
+const toolbarOpen = ref(false);
 </script>
 
 <template>
-    <div ref="containerRef" class="container">
+    <div
+        ref="containerRef"
+        class="container"
+    >
         <BaseView
             @image-loaded="initDrawingTools"
             :fog-of-war-color="fogOfWarColor"
         />
         <div
-            class="indicator"
-            :style="{ 'background-color': addFow ? 'black' : 'white' }"
+            class="vertical-line"
+            :style="{ left: mouseX + 'px' }"
+        ></div>
+        <div
+            class="horizontal-line"
+            :style="{ top: mouseY + 'px' }"
+        ></div>
+        <Transition name="fade">
+            <ToolbarButton
+                v-if="!toolbarOpen"
+                class="toolbar-open-button"
+                @press="toolbarOpen = !toolbarOpen"
+                text="open"
+                tooltip-pos="bottom"
+            />
+        </Transition>
+        <Toolbar
+            v-model:open="toolbarOpen"
+            class="toolbar"
         />
-        <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
-        <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
+        <!--        <div-->
+        <!--            class="indicator"-->
+        <!--            :style="{ 'background-color': addFow ? 'black' : 'white' }"-->
+        <!--        />-->
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
 .container {
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+}
+
+.toolbar {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.toolbar-open-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
 }
 
 .indicator {
