@@ -5,26 +5,73 @@ import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
 
-const mapStore = useMapStore();
+enum Tool {
+    FogOfWar,
+    Circle,
+}
 
+const mapStore = useMapStore();
 const addFow = ref(false);
 const fogOfWarColor = '#000000A0';
-
 const { x: mouseX, y: mouseY } = useMouse();
-
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
+let currentTool = Tool.Circle;
+const paperTool = new paper.Tool();
+
+function changeDrawingTool() {
+    // TODO: later let this be controlled by UI
+    if (currentTool == Tool.FogOfWar) {
+        currentTool = Tool.Circle;
+    } else {
+        currentTool = Tool.FogOfWar;
+    }
+    initDrawingTools();
+}
 
 function initDrawingTools() {
-    // TODO: also set up drawing tools for freehand drawing
-    const tool = new paper.Tool();
+    if (currentTool == Tool.Circle) {
+        initCircleTool();
+    } else {
+        initFogTool();
+    }
+}
 
+function initCircleTool() {
+    let circle: paper.Path.Circle;
+    let startPoint: paper.Point;
+
+    paper.tool.onMouseDown = (event: paper.ToolEvent) => {
+        startPoint = event.point;
+        circle = new paper.Path.Circle(event.point, 10);
+        circle.strokeColor = new paper.Color('red');
+    };
+
+    paper.tool.onMouseDrag = (event: paper.ToolEvent) => {
+        let radius = startPoint.getDistance(event.point);
+        circle.remove();
+        circle = new paper.Path.Circle({
+            center: startPoint,
+            radius: radius,
+            strokeColor: 'red',
+        });
+    };
+
+    paperTool.onMouseUp = (event: paper.ToolEvent) => {
+        circle.closed = true;
+        addFow.value ? addPathToFow(circle) : removePathFromFow(circle);
+        sendPathUpdate();
+    };
+    paperTool.activate();
+}
+
+function initFogTool() {
     let path: paper.Path;
-    tool.onMouseDown = (event: PaperMouseEvent) => {
+    paperTool.onMouseDown = (event: PaperMouseEvent) => {
         path = new paper.Path();
         path.add(event.point);
     };
 
-    tool.onMouseDrag = (event: PaperMouseEvent) => {
+    paperTool.onMouseDrag = (event: PaperMouseEvent) => {
         if (path) {
             addFow.value
                 ? (path.strokeColor = new paper.Color('black'))
@@ -33,7 +80,7 @@ function initDrawingTools() {
         }
     };
 
-    tool.onMouseUp = () => {
+    paperTool.onMouseUp = () => {
         if (!path) return;
 
         path.closed = true;
@@ -43,7 +90,7 @@ function initDrawingTools() {
 
         sendPathUpdate();
     };
-    tool.activate();
+    paperTool.activate();
 }
 
 function addPathToFow(path: paper.Path) {
@@ -119,6 +166,8 @@ function getActiveLayer() {
 useEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'x') {
         addFow.value = !addFow.value;
+    } else if (e.key === 'c') {
+        changeDrawingTool();
     }
 });
 </script>
