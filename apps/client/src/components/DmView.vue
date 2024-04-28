@@ -4,15 +4,18 @@ import { ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
+import { number } from 'zod';
 
 enum Tool {
     FogOfWar,
     Circle,
+    Arrow,
 }
 
 const mapStore = useMapStore();
 const addFow = ref(false);
 const fogOfWarColor = '#000000A0';
+const arrowThickness = 10;
 const { x: mouseX, y: mouseY } = useMouse();
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
 let currentTool = Tool.Circle;
@@ -20,23 +23,99 @@ const paperTool = new paper.Tool();
 
 function changeDrawingTool() {
     // TODO: later let this be controlled by UI
-    if (currentTool == Tool.FogOfWar) {
-        currentTool = Tool.Circle;
-    } else {
-        currentTool = Tool.FogOfWar;
+
+    switch (currentTool) {
+        case Tool.FogOfWar:
+            currentTool = Tool.Circle;
+            break;
+        case Tool.Circle:
+            currentTool = Tool.Arrow;
+            break;
+        case Tool.Arrow:
+            currentTool = Tool.FogOfWar;
     }
     initDrawingTools();
 }
 
 function initDrawingTools() {
-    if (currentTool == Tool.Circle) {
-        initCircleTool();
-    } else {
-        initFogTool();
+    switch (currentTool) {
+        case Tool.FogOfWar:
+            initCircleTool();
+            break;
+        case Tool.Circle:
+            initArrowTool();
+            break;
+        case Tool.Arrow:
+            initFogTool();
     }
 }
 
+function initArrowTool() {
+    baseViewRef.value?.activateDrawingLayer();
+    let arrowShaft: paper.Path;
+    let arrowHeadLeft: paper.Path;
+    let arrowHeadRight: paper.Path;
+    let startPoint: paper.Point;
+
+    paper.tool.onMouseDown = (event: paper.ToolEvent) => {
+        startPoint = event.point;
+        arrowShaft = new paper.Path({
+            segments: [startPoint, startPoint],
+            strokeColor: new paper.Color('red'),
+            strokeWidth: arrowThickness,
+            strokeCap: 'round',
+        });
+
+        arrowHeadLeft = new paper.Path({
+            segments: [startPoint, startPoint],
+            strokeColor: new paper.Color('red'),
+            srokeWidth: arrowThickness,
+            strokeCap: 'round',
+        });
+
+        arrowHeadRight = new paper.Path({
+            segments: [startPoint, startPoint],
+            strokeColor: new paper.Color('red'),
+            srokeWidth: arrowThickness,
+            strokeCap: 'round',
+        });
+    };
+
+    paper.tool.onMouseDrag = (event: paper.ToolEvent) => {
+        let endPoint = event.point;
+        arrowShaft.lastSegment.point = endPoint;
+
+        let vector = new paper.Point(
+            endPoint.x - startPoint.x,
+            endPoint.y - startPoint.y,
+        );
+        let arrowVector = vector.normalize(
+            startPoint.getDistance(endPoint) / 3,
+        );
+
+        let arrowHeadLeftVector = arrowVector
+            .rotate(145, new paper.Point(0, 0))
+            .add(endPoint);
+        let arrowHeadRightVector = arrowVector
+            .rotate(-145, new paper.Point(0, 0))
+            .add(endPoint);
+
+        arrowHeadLeft.segments = [
+            new paper.Segment(endPoint),
+            new paper.Segment(arrowHeadLeftVector),
+        ];
+        arrowHeadLeft.strokeWidth = arrowThickness;
+        arrowHeadRight.segments = [
+            new paper.Segment(endPoint),
+            new paper.Segment(arrowHeadRightVector),
+        ];
+        arrowHeadRight.strokeWidth = arrowThickness;
+    };
+    paperTool.activate();
+}
+
 function initCircleTool() {
+    baseViewRef.value?.activateFowLayer();
     let circle: paper.Path.Circle;
     let startPoint: paper.Point;
 
@@ -59,12 +138,13 @@ function initCircleTool() {
     paperTool.onMouseUp = (event: paper.ToolEvent) => {
         circle.closed = true;
         addFow.value ? addPathToFow(circle) : removePathFromFow(circle);
-        sendPathUpdate();
+        sendFowUpdate();
     };
     paperTool.activate();
 }
 
 function initFogTool() {
+    baseViewRef.value?.activateFowLayer();
     let path: paper.Path;
     paperTool.onMouseDown = (event: PaperMouseEvent) => {
         path = new paper.Path();
@@ -88,12 +168,13 @@ function initFogTool() {
 
         addFow.value ? addPathToFow(path) : removePathFromFow(path);
 
-        sendPathUpdate();
+        sendFowUpdate();
     };
     paperTool.activate();
 }
 
 function addPathToFow(path: paper.Path) {
+    baseViewRef.value?.activateFowLayer();
     let combinedPath: paper.Path | paper.PathItem = path;
     paper.project.activeLayer.children.forEach((child) => {
         if (
@@ -112,6 +193,7 @@ function addPathToFow(path: paper.Path) {
 }
 
 function removePathFromFow(path: paper.Path) {
+    baseViewRef.value?.activateFowLayer();
     let substractedPath:
         | paper.CompoundPath
         | paper.PathItem
@@ -133,7 +215,8 @@ function removePathFromFow(path: paper.Path) {
     paper.project.activeLayer.addChild(substractedPath);
 }
 
-function sendPathUpdate() {
+function sendFowUpdate() {
+    baseViewRef.value?.activateFowLayer();
     const firstChild = getFirstActiveLayerChild();
     if (
         firstChild instanceof paper.CompoundPath ||
@@ -170,11 +253,17 @@ useEventListener('keydown', (e: KeyboardEvent) => {
         changeDrawingTool();
     }
 });
+
+const baseViewRef = ref<{
+    activateDrawingLayer: () => void;
+    activateFowLayer: () => void;
+}>();
 </script>
 
 <template>
     <div ref="containerRef" class="container">
         <BaseView
+            ref="baseViewRef"
             @image-loaded="initDrawingTools"
             :fog-of-war-color="fogOfWarColor"
         />

@@ -6,6 +6,9 @@ import paper from 'paper';
 import { useEventListener } from '@vueuse/core';
 import type { FogOfWar } from '@base';
 
+let fowLayer: paper.Layer;
+let drawingLayer: paper.Layer;
+
 const props = withDefaults(defineProps<{ fogOfWarColor: string }>(), {
     fogOfWarColor: 'black',
 });
@@ -47,10 +50,25 @@ async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
     await nextTick();
 
     paper.setup(canvasRef.value);
+    initLayers();
 
     if (mapStore.fowData != undefined) {
         updateFOW(mapStore.fowData);
     }
+}
+
+function initLayers() {
+    // TODO: turn layers around later (drawing must be below fow layer)
+    fowLayer = paper.project.activeLayer;
+    drawingLayer = new paper.Layer();
+}
+
+function activateFowLayer() {
+    fowLayer.activate();
+}
+
+function activateDrawingLayer() {
+    drawingLayer.activate();
 }
 
 watch(fowData, (newFowData) => {
@@ -60,6 +78,7 @@ watch(fowData, (newFowData) => {
 });
 
 function updateFOW(data: FogOfWar) {
+    activateFowLayer();
     let path: paper.CompoundPath = new paper.CompoundPath(data.svgPath);
     path.fillColor = new paper.Color(props.fogOfWarColor);
 
@@ -88,6 +107,11 @@ function scaleAndPositionPath(
     );
     path.scale(uniformScale);
 }
+
+defineExpose({
+    activateDrawingLayer,
+    activateFowLayer,
+});
 </script>
 
 <template>
