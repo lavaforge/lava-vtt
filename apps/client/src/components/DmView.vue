@@ -4,7 +4,6 @@ import { ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
-import { number } from 'zod';
 
 enum Tool {
     FogOfWar,
@@ -110,6 +109,15 @@ function initArrowTool() {
             new paper.Segment(arrowHeadRightVector),
         ];
         arrowHeadRight.strokeWidth = arrowThickness;
+    };
+
+    paperTool.onMouseUp = (event: paper.ToolEvent) => {
+        arrowShaft.closed = true;
+        arrowHeadLeft.closed = true;
+        arrowHeadRight.closed = true;
+        arrowShaft.smooth();
+        arrowHeadLeft.smooth();
+        arrowHeadRight.smooth();
     };
     paperTool.activate();
 }
