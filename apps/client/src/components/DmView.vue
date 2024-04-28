@@ -82,15 +82,15 @@ function initArrowTool() {
 
     paper.tool.onMouseDrag = (event: paper.ToolEvent) => {
         let endPoint = event.point;
+        let arrowLength = startPoint.getDistance(endPoint);
         arrowShaft.lastSegment.point = endPoint;
+        arrowShaft.strokeWidth = (arrowThickness * arrowLength) / 100;
 
         let vector = new paper.Point(
             endPoint.x - startPoint.x,
             endPoint.y - startPoint.y,
         );
-        let arrowVector = vector.normalize(
-            startPoint.getDistance(endPoint) / 3,
-        );
+        let arrowVector = vector.normalize(arrowLength / 3);
 
         let arrowHeadLeftVector = arrowVector
             .rotate(145, new paper.Point(0, 0))
@@ -103,12 +103,12 @@ function initArrowTool() {
             new paper.Segment(endPoint),
             new paper.Segment(arrowHeadLeftVector),
         ];
-        arrowHeadLeft.strokeWidth = arrowThickness;
+        arrowHeadLeft.strokeWidth = (arrowThickness * arrowLength) / 100;
         arrowHeadRight.segments = [
             new paper.Segment(endPoint),
             new paper.Segment(arrowHeadRightVector),
         ];
-        arrowHeadRight.strokeWidth = arrowThickness;
+        arrowHeadRight.strokeWidth = (arrowThickness * arrowLength) / 100;
     };
 
     paperTool.onMouseUp = (event: paper.ToolEvent) => {
@@ -118,6 +118,7 @@ function initArrowTool() {
         arrowShaft.smooth();
         arrowHeadLeft.smooth();
         arrowHeadRight.smooth();
+        // TODO: also send to server to be sent to clients
     };
     paperTool.activate();
 }
