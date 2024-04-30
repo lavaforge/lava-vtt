@@ -19,7 +19,7 @@ defineEmits<{
         @click="$emit('press')"
         :class="{ active }"
     >
-        <span>{{ text }}</span>
+        <span class="content">{{ text }}</span>
         <span :class="['tooltip', tooltipPos === 'top' ? 'top' : 'bottom']"
             >tooltip</span
         >
@@ -35,9 +35,11 @@ defineEmits<{
     box-shadow:
         0 0 0.5rem #fbb4577e inset,
         0.125rem 0.125rem 1rem black;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
+
+    $size: 3rem;
+    min-width: $size;
+    height: $size;
+    border-radius: calc($size / 2);
 
     display: flex;
     justify-content: center;
@@ -48,7 +50,18 @@ defineEmits<{
     cursor: pointer;
 
     &.active {
-        font-size: 1.5rem;
+        // font-size: 1.5rem;
+        // border: 4px solid #808080;
+        span {
+            // text-decoration: underline;
+            font-weight: bold;
+            border: 1px solid black;
+            border-radius: 0.5rem;
+        }
+    }
+
+    .content {
+        padding: 0 0.25rem;
     }
 
     .tooltip {
@@ -62,7 +75,9 @@ defineEmits<{
 
         border-radius: 0.5rem;
 
-        transition: opacity 0.2s ease;
+        transition:
+            opacity 0.2s ease,
+            transform 0.2s ease-in-out;
         pointer-events: none;
 
         &.top {
@@ -74,8 +89,14 @@ defineEmits<{
         }
     }
 
-    &:hover .tooltip {
-        opacity: 1;
+    &:hover {
+        transform: scale(1.04);
+        transition: transform 0.2s ease-in-out;
+
+        .tooltip {
+            opacity: 1;
+            transform: scale(calc(1 / 1.04));
+        }
     }
 
     &:active {

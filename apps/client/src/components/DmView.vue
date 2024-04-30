@@ -214,7 +214,7 @@ function handleButtonPress(text: string) {
                 v-if="!toolbarOpen"
                 class="toolbar-open-button"
                 @press="toolbarOpen = !toolbarOpen"
-                text="open"
+                text="opening thing"
                 tooltip-pos="bottom"
             />
         </Transition>

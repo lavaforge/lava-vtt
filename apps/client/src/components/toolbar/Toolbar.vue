@@ -85,7 +85,8 @@ function handlePress(text: string) {
             v-for="(btn, i) in buttons"
             :class="['button', { active: btn.text === props.activeButton }]"
             :style="{
-                transform: `translateX(${distances[i]})`,
+                transform:
+                    distances[i] !== '0' ? `translateX(${distances[i]})` : null,
                 opacity: opacity,
             }"
             :text="btn.text"
