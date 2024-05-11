@@ -118,7 +118,7 @@ function initArrowTool() {
         arrowShaft.smooth();
         arrowHeadLeft.smooth();
         arrowHeadRight.smooth();
-        // TODO: also send to server to be sent to clients
+        sendDrawingUpdate();
     };
     paperTool.activate();
 }
@@ -244,6 +244,31 @@ function sendFowUpdate() {
             false,
         );
     }
+}
+
+function sendDrawingUpdate() {
+    baseViewRef.value?.activateDrawingLayer();
+    const drawings = getActiveLayer().children;
+    const svgs = drawings
+        .map((singleDrawing) => {
+            if (
+                singleDrawing instanceof paper.CompoundPath ||
+                singleDrawing instanceof paper.Path
+            ) {
+                if (singleDrawing) return singleDrawing.pathData;
+            }
+        })
+        .filter((element): element is string => !!element);
+
+    mapStore.setDrawing({
+        svgPath: svgs,
+        canvas: {
+            width: paper.view.size.width,
+            height: paper.view.size.height,
+            posX: drawings.at(0)?.position.x ?? 0,
+            posY: drawings.at(0)?.position.y ?? 0,
+        },
+    });
 }
 
 function getFirstActiveLayerChild() {

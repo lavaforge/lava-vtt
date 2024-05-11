@@ -5,9 +5,11 @@ import { MongoClient } from 'mongodb';
 import { apiRouter } from './routes/api.route';
 import { ServiceContainer } from 'ioc-service-container';
 import { FowService } from './services/fow.service';
+import { DrawingService } from './services/drawing.service';
 import { BackendConduit } from './conduit/BackendConduit';
 import { DisplayStore } from './display.store';
 import { attuneToFogOfWarVeins } from './conduit/fowAttunement';
+import { attuneToDrawingVeins } from './conduit/drawingAttunement';
 
 const port = process.env.PORT || 3000;
 
@@ -19,6 +21,7 @@ const db = client.db(dbName);
 
 ServiceContainer.set('Db', () => db);
 ServiceContainer.set('FowService', FowService);
+ServiceContainer.set('DrawingService', DrawingService);
 ServiceContainer.set('DisplayStore', DisplayStore);
 
 const app = express();
@@ -44,6 +47,7 @@ const conduit = new BackendConduit(io);
 ServiceContainer.set('conduit', () => conduit);
 
 attuneToFogOfWarVeins();
+attuneToDrawingVeins();
 
 app.use('/api', apiRouter);
 
