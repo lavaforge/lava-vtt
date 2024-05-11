@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref, shallowReadonly } from 'vue';
 import { scg } from 'ioc-service-container';
 import type { FogOfWar } from '@base';
+import type { DrawingData } from '@base';
 import { refWithControl } from '@vueuse/core';
 
 export const useMapStore = defineStore('map', () => {
@@ -10,6 +11,9 @@ export const useMapStore = defineStore('map', () => {
 
     const currentHash = ref<string>();
     const currentFowData = refWithControl<FogOfWar | undefined>(undefined);
+    const currentDrawingData = refWithControl<DrawingData | undefined>(
+        undefined,
+    );
 
     conduit.attune('imageHash', async (lore) => {
         const newHash = lore.hash;
@@ -23,7 +27,12 @@ export const useMapStore = defineStore('map', () => {
             hash: newHash,
         });
 
+        const newDrawingData = await conduit.invoke('drawingRequest', 'nexus', {
+            hash: newHash,
+        });
+
         currentFowData.value = newFow.data;
+        currentDrawingData.value = newDrawingData.data;
         currentHash.value = newHash;
     });
 
@@ -33,6 +42,13 @@ export const useMapStore = defineStore('map', () => {
         }
 
         currentFowData.value = lore.data;
+    });
+
+    conduit.attune('drawingUpdate', (lore) => {
+        if (lore.hash !== currentHash.value) {
+            return;
+        }
+        currentDrawingData.value = lore.data;
     });
 
     const imagePath = computed(() =>
@@ -49,5 +65,21 @@ export const useMapStore = defineStore('map', () => {
         });
     }
 
-    return { imagePath, fowData: shallowReadonly(currentFowData), setFow };
+    function setDrawing(drawingData: DrawingData, triggering: boolean = true) {
+        if (!currentHash.value) return;
+
+        currentDrawingData.set(drawingData, triggering);
+        conduit.broadcast('drawingUpdate', {
+            hash: currentHash.value,
+            data: drawingData,
+        });
+    }
+
+    return {
+        imagePath,
+        fowData: shallowReadonly(currentFowData),
+        setFow,
+        drawingData: shallowReadonly(currentDrawingData),
+        setDrawing,
+    };
 });

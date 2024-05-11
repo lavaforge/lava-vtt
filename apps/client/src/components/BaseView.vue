@@ -4,13 +4,14 @@ import { storeToRefs } from 'pinia';
 import { nextTick, type Ref, ref, watch } from 'vue';
 import paper from 'paper';
 import { useEventListener } from '@vueuse/core';
-import type { FogOfWar } from '@base';
+import type { DrawingData, FogOfWar } from '@base';
 
 let fowLayer: paper.Layer;
 let drawingLayer: paper.Layer;
 
 const props = withDefaults(defineProps<{ fogOfWarColor: string }>(), {
     fogOfWarColor: 'black',
+    arrowColor: 'red',
 });
 
 const emit = defineEmits<{
@@ -18,7 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const mapStore = useMapStore();
-const { imagePath, fowData } = storeToRefs(mapStore);
+const { imagePath, fowData, drawingData } = storeToRefs(mapStore);
 
 const imageRef = ref<HTMLImageElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -55,6 +56,10 @@ async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
     if (mapStore.fowData != undefined) {
         updateFOW(mapStore.fowData);
     }
+
+    if (mapStore.drawingData != undefined) {
+        updateDrawing(mapStore.drawingData);
+    }
 }
 
 function initLayers() {
@@ -77,6 +82,12 @@ watch(fowData, (newFowData) => {
     }
 });
 
+watch(drawingData, (newDrawingData) => {
+    if (newDrawingData && canvasRef.value && imageRef.value) {
+        updateDrawing(newDrawingData);
+    }
+});
+
 function updateFOW(data: FogOfWar) {
     activateFowLayer();
     let path: paper.CompoundPath = new paper.CompoundPath(data.svgPath);
@@ -86,6 +97,18 @@ function updateFOW(data: FogOfWar) {
 
     paper.project.activeLayer.removeChildren();
     paper.project.activeLayer.addChild(path);
+}
+
+function updateDrawing(data: DrawingData) {
+    // TODO: this does not work....
+    activateDrawingLayer();
+    paper.project.activeLayer.removeChildren();
+
+    data.svgPath.forEach((element) => {
+        let path = new paper.CompoundPath(element);
+        console.log(path);
+        paper.project.activeLayer.addChild(path);
+    });
 }
 
 function scaleAndPositionPath(
