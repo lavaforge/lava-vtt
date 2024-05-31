@@ -3,7 +3,14 @@ import { useMapStore } from '../logic/useMapStore';
 import { ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
+import { PaperOffset } from 'paperjs-offset';
 import BaseView from './BaseView.vue';
+import type { DrawingData } from '../../../../libs/base/src/lib/drawingData';
+import type { join } from 'path';
+import {
+    fogOfWarSchema,
+    type FogOfWar,
+} from '../../../../libs/base/src/lib/fogOfWar';
 
 enum Tool {
     FogOfWar,
@@ -68,14 +75,14 @@ function initArrowTool() {
         arrowHeadLeft = new paper.Path({
             segments: [startPoint, startPoint],
             strokeColor: new paper.Color('red'),
-            srokeWidth: arrowThickness,
+            strokeWidth: arrowThickness,
             strokeCap: 'round',
         });
 
         arrowHeadRight = new paper.Path({
             segments: [startPoint, startPoint],
             strokeColor: new paper.Color('red'),
-            srokeWidth: arrowThickness,
+            strokeWidth: arrowThickness,
             strokeCap: 'round',
         });
     };
@@ -118,7 +125,23 @@ function initArrowTool() {
         arrowShaft.smooth();
         arrowHeadLeft.smooth();
         arrowHeadRight.smooth();
+
+        /*const strokeArrowShaft = PaperOffset.offsetStroke(
+            arrowShaft,
+            arrowThickness,
+            { cap: 'round' }
+        )
+
+        strokeArrowShaft.fillColor = new paper.Color('red');
+
+        console.log(strokeArrowShaft.exportSVG())*/
+
+        //paper.project.activeLayer.addChild(new paper.CompoundPath())
+
         sendDrawingUpdate();
+        /*arrowShaft.remove();
+        arrowHeadLeft.remove();
+        arrowHeadRight.remove();*/
     };
     paperTool.activate();
 }
@@ -249,26 +272,28 @@ function sendFowUpdate() {
 function sendDrawingUpdate() {
     baseViewRef.value?.activateDrawingLayer();
     const drawings = getActiveLayer().children;
-    const svgs = drawings
+    const drawingObject = drawings
         .map((singleDrawing) => {
             if (
                 singleDrawing instanceof paper.CompoundPath ||
                 singleDrawing instanceof paper.Path
             ) {
-                if (singleDrawing) return singleDrawing.pathData;
+                if (singleDrawing) {
+                    return {
+                        svgPath: singleDrawing.pathData,
+                        canvas: {
+                            width: paper.view.size.width,
+                            height: paper.view.size.height,
+                            posX: singleDrawing.position.x,
+                            posY: singleDrawing.position.y,
+                        },
+                    };
+                }
             }
         })
-        .filter((element): element is string => !!element);
-
-    mapStore.setDrawing({
-        svgPath: svgs,
-        canvas: {
-            width: paper.view.size.width,
-            height: paper.view.size.height,
-            posX: drawings.at(0)?.position.x ?? 0,
-            posY: drawings.at(0)?.position.y ?? 0,
-        },
-    });
+        .filter((element): element is FogOfWar => !!element);
+    console.log(drawingObject);
+    mapStore.setDrawing(drawingObject, false);
 }
 
 function getFirstActiveLayerChild() {

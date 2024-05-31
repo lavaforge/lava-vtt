@@ -100,13 +100,16 @@ function updateFOW(data: FogOfWar) {
 }
 
 function updateDrawing(data: DrawingData) {
-    // TODO: this does not work....
+    // TODO: remove stroke width and cap -> on dmview: send arrows as filled path instead of line
     activateDrawingLayer();
     paper.project.activeLayer.removeChildren();
 
-    data.svgPath.forEach((element) => {
-        let path = new paper.CompoundPath(element);
-        console.log(path);
+    data.forEach((element) => {
+        let path: paper.CompoundPath = new paper.CompoundPath(element.svgPath);
+        path.fillColor = new paper.Color(props.arrowColor);
+        path.strokeColor = new paper.Color('red');
+        path.strokeWidth = 10;
+        scaleAndPositionPath(path, element.canvas);
         paper.project.activeLayer.addChild(path);
     });
 }
@@ -115,6 +118,8 @@ function scaleAndPositionPath(
     path: paper.CompoundPath,
     canvasGeometry: FogOfWar['canvas'],
 ) {
+    console.log(path.pathData);
+    console.log(canvasGeometry);
     const newCanvasWidth = paper.view.size.width;
     const newCanvasHeight = paper.view.size.height;
 
