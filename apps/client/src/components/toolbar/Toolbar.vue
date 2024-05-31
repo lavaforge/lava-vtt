@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ToolbarButton from './ToolbarButton.vue';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
+import { icons } from '../../icons';
 
 const props = defineProps<{
     open: boolean;
@@ -12,36 +13,32 @@ const emit = defineEmits<{
     buttonPress: [text: string];
 }>();
 
-const buttons = ref([
-    { text: '1' },
-    { text: '2' },
-    { text: '3' },
-    { text: '4' },
-    { text: '5' },
-    { text: '6' },
-    { text: '7' },
-    { text: '8' },
-    { text: '9' },
-    { text: '0' },
-    { text: 'close' },
+interface ButtonDto {
+    id: string;
+    label: string;
+    icon?: string;
+    subButtons?: ButtonDto[];
+}
+
+const buttons = ref<ButtonDto[]>([
+    { id: '1', label: '1', icon: icons.fogOfWar },
+    { id: '2', label: '2' },
+    { id: 'fog-of-war', label: 'fog of war', icon: icons.fogOfWar },
+    { id: '4', label: '4' },
+    { id: '5', label: '5' },
+    { id: '6', label: '6' },
+    { id: '7', label: '7' },
+    { id: '8', label: '8' },
+    { id: '9', label: '9' },
+    {
+        id: '0',
+        icon: icons.fogOfWar,
+        label: 'asdfölkajsdöflkjasdf ölkajsd fölakjs dfölkajs döflkja sdöflja södflkj asödlfkj asöldfkj aösldfkj aösldfjk aösldkfj aösldkfj aösldkjf aölsdkjf öalsdfj aölsdkjf aölsdkjf aölsdkfj aöslkdfj asdf',
+    },
+    { id: 'close', label: 'x' },
 ]);
 
 const toggle = ref(props.open);
-const distances = computed(() => {
-    if (toggle.value) {
-        return buttons.value.map(() => '0');
-    } else {
-        const bw = 3;
-        const gap = 1;
-
-        const half = buttons.value.length / 2 - 0.5;
-        return buttons.value.map((_, i) => {
-            const btnDist = half - i;
-            const actDist = btnDist * (bw + gap);
-            return `${actDist}rem`;
-        });
-    }
-});
 
 const opacity = ref(props.open ? 1 : 0);
 const actOpen = ref(props.open);
@@ -81,16 +78,16 @@ function handlePress(text: string) {
         class="toolbar-host"
     >
         <ToolbarButton
-            :key="btn.text"
-            v-for="(btn, i) in buttons"
-            :class="['button', { active: btn.text === props.activeButton }]"
+            :key="btn.label"
+            v-for="btn in buttons"
+            :class="['button', { active: btn.id === props.activeButton }]"
             :style="{
-                transform:
-                    distances[i] !== '0' ? `translateX(${distances[i]})` : null,
                 opacity: opacity,
             }"
-            :text="btn.text"
-            @press="handlePress(btn.text)"
+            :alt-text="btn.label"
+            :tooltip="btn.label"
+            :icon="btn.icon"
+            @press="handlePress(btn.id)"
         />
     </div>
 </template>

@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { nextTick, ref } from 'vue';
+import { useIntersectionObserver, useResizeObserver } from '@vueuse/core';
+
 withDefaults(
     defineProps<{
-        text: string;
+        altText: string;
         tooltipPos?: 'top' | 'bottom';
         active?: boolean;
+        icon?: string;
+        tooltip: string;
     }>(),
     { tooltipPos: 'top', active: false },
 );
@@ -11,6 +16,75 @@ withDefaults(
 defineEmits<{
     press: [];
 }>();
+
+const hostRef = ref<HTMLButtonElement | null>(null);
+const tooltipRef = ref<HTMLSpanElement | null>(null);
+const tooltipOffsetDirection = ref<'offsetLeft' | 'offsetRight' | null>(null);
+const tooltipOffsetAmount = ref(0);
+const originOffsetAmount = ref(0);
+
+const { pause, resume } = useIntersectionObserver(
+    tooltipRef,
+    ([entry]) => {
+        const fullyInViewport = entry.isIntersecting;
+
+        if (fullyInViewport) {
+            pause();
+            return;
+        }
+
+        const outsideOnTheLeft = entry.boundingClientRect.left <= 0;
+        tooltipOffsetDirection.value = outsideOnTheLeft
+            ? 'offsetLeft'
+            : 'offsetRight';
+
+        if (tooltipOffsetDirection.value === 'offsetLeft') {
+            tooltipOffsetAmount.value = -Math.abs(
+                (hostRef.value?.getBoundingClientRect().left ?? 0) -
+                    entry.intersectionRect.left,
+            );
+            originOffsetAmount.value =
+                -Math.abs(
+                    entry.intersectionRect.left - entry.boundingClientRect.left,
+                ) +
+                Math.abs(
+                    entry.boundingClientRect.right -
+                        (hostRef.value?.getBoundingClientRect().right ?? 0),
+                ) +
+                (hostRef.value?.getBoundingClientRect().width ?? 0) / 2;
+        } else {
+            tooltipOffsetAmount.value = -Math.abs(
+                (hostRef.value?.getBoundingClientRect().right ?? 0) -
+                    entry.intersectionRect.right,
+            );
+            originOffsetAmount.value =
+                Math.abs(
+                    entry.intersectionRect.right -
+                        entry.boundingClientRect.right,
+                ) +
+                Math.abs(
+                    entry.boundingClientRect.left -
+                        (hostRef.value?.getBoundingClientRect().left ?? 0),
+                ) +
+                (hostRef.value?.getBoundingClientRect().width ?? 0) / 2;
+        }
+
+        pause();
+    },
+    // .999 because 1.0 leads to false positives which have a ratio of .9999...
+    { threshold: 0.999, rootMargin: '-8px' },
+);
+
+useResizeObserver(
+    document.body,
+    () => {
+        tooltipOffsetDirection.value = null;
+        tooltipOffsetAmount.value = 0;
+        originOffsetAmount.value = 0;
+        nextTick(() => resume());
+    },
+    { box: 'border-box' },
+);
 </script>
 
 <template>
@@ -18,10 +92,33 @@ defineEmits<{
         class="toolbar-button-host"
         @click="$emit('press')"
         :class="{ active }"
+        ref="hostRef"
     >
-        <span class="content">{{ text }}</span>
-        <span :class="['tooltip', tooltipPos === 'top' ? 'top' : 'bottom']"
-            >tooltip</span
+        <img
+            :src="icon"
+            v-if="icon"
+        />
+        <span
+            v-else
+            class="content"
+            >{{ altText }}</span
+        >
+        <span
+            ref="tooltipRef"
+            :class="['tooltip', tooltipPos === 'top' ? 'top' : 'bottom']"
+            :style="[
+                tooltipOffsetDirection
+                    ? tooltipOffsetDirection === 'offsetLeft'
+                        ? { left: tooltipOffsetAmount + 'px' }
+                        : { right: tooltipOffsetAmount + 'px' }
+                    : null,
+                {
+                    transformOrigin: originOffsetAmount
+                        ? `${originOffsetAmount}px 50%`
+                        : 'center',
+                },
+            ]"
+            >{{ tooltip }}</span
         >
     </button>
 </template>
@@ -49,15 +146,17 @@ defineEmits<{
 
     cursor: pointer;
 
-    &.active {
-        // font-size: 1.5rem;
-        // border: 4px solid #808080;
-        span {
-            // text-decoration: underline;
-            font-weight: bold;
-            border: 1px solid black;
-            border-radius: 0.5rem;
-        }
+    &.active:after {
+        // "selected" border
+        position: absolute;
+        content: '';
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+
+        box-shadow: 0 0 0 4px black inset;
+        border-radius: calc($size / 2);
     }
 
     .content {
@@ -68,6 +167,8 @@ defineEmits<{
         opacity: 0;
 
         position: absolute;
+        width: max-content;
+        max-width: 90vw;
 
         color: #ddd;
         background: rgba(0, 0, 0, 0.8);
@@ -86,6 +187,14 @@ defineEmits<{
 
         &.bottom {
             top: 110%;
+        }
+
+        &.offsetLeft {
+            left: 0;
+        }
+
+        &.offsetRight {
+            right: -0.5rem;
         }
     }
 
