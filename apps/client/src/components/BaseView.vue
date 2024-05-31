@@ -107,8 +107,8 @@ function updateDrawing(data: DrawingData) {
     data.forEach((element) => {
         let path: paper.CompoundPath = new paper.CompoundPath(element.svgPath);
         path.fillColor = new paper.Color(props.arrowColor);
-        path.strokeColor = new paper.Color('red');
-        path.strokeWidth = 10;
+        path.strokeColor = new paper.Color('red'); // TODO: also store color values for all items on drawing layer
+        path.fillColor = new paper.Color('red');
         scaleAndPositionPath(path, element.canvas);
         paper.project.activeLayer.addChild(path);
     });

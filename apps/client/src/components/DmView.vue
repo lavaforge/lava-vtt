@@ -56,96 +56,6 @@ function initDrawingTools() {
     }
 }
 
-function initArrowTool() {
-    baseViewRef.value?.activateDrawingLayer();
-    let arrowShaft: paper.Path;
-    let arrowHeadLeft: paper.Path;
-    let arrowHeadRight: paper.Path;
-    let startPoint: paper.Point;
-
-    paper.tool.onMouseDown = (event: paper.ToolEvent) => {
-        startPoint = event.point;
-        arrowShaft = new paper.Path({
-            segments: [startPoint, startPoint],
-            strokeColor: new paper.Color('red'),
-            strokeWidth: arrowThickness,
-            strokeCap: 'round',
-        });
-
-        arrowHeadLeft = new paper.Path({
-            segments: [startPoint, startPoint],
-            strokeColor: new paper.Color('red'),
-            strokeWidth: arrowThickness,
-            strokeCap: 'round',
-        });
-
-        arrowHeadRight = new paper.Path({
-            segments: [startPoint, startPoint],
-            strokeColor: new paper.Color('red'),
-            strokeWidth: arrowThickness,
-            strokeCap: 'round',
-        });
-    };
-
-    paper.tool.onMouseDrag = (event: paper.ToolEvent) => {
-        let endPoint = event.point;
-        let arrowLength = startPoint.getDistance(endPoint);
-        arrowShaft.lastSegment.point = endPoint;
-        arrowShaft.strokeWidth = (arrowThickness * arrowLength) / 100;
-
-        let vector = new paper.Point(
-            endPoint.x - startPoint.x,
-            endPoint.y - startPoint.y,
-        );
-        let arrowVector = vector.normalize(arrowLength / 3);
-
-        let arrowHeadLeftVector = arrowVector
-            .rotate(145, new paper.Point(0, 0))
-            .add(endPoint);
-        let arrowHeadRightVector = arrowVector
-            .rotate(-145, new paper.Point(0, 0))
-            .add(endPoint);
-
-        arrowHeadLeft.segments = [
-            new paper.Segment(endPoint),
-            new paper.Segment(arrowHeadLeftVector),
-        ];
-        arrowHeadLeft.strokeWidth = (arrowThickness * arrowLength) / 100;
-        arrowHeadRight.segments = [
-            new paper.Segment(endPoint),
-            new paper.Segment(arrowHeadRightVector),
-        ];
-        arrowHeadRight.strokeWidth = (arrowThickness * arrowLength) / 100;
-    };
-
-    paperTool.onMouseUp = (event: paper.ToolEvent) => {
-        arrowShaft.closed = true;
-        arrowHeadLeft.closed = true;
-        arrowHeadRight.closed = true;
-        arrowShaft.smooth();
-        arrowHeadLeft.smooth();
-        arrowHeadRight.smooth();
-
-        /*const strokeArrowShaft = PaperOffset.offsetStroke(
-            arrowShaft,
-            arrowThickness,
-            { cap: 'round' }
-        )
-
-        strokeArrowShaft.fillColor = new paper.Color('red');
-
-        console.log(strokeArrowShaft.exportSVG())*/
-
-        //paper.project.activeLayer.addChild(new paper.CompoundPath())
-
-        sendDrawingUpdate();
-        /*arrowShaft.remove();
-        arrowHeadLeft.remove();
-        arrowHeadRight.remove();*/
-    };
-    paperTool.activate();
-}
-
 function initCircleTool() {
     baseViewRef.value?.activateFowLayer();
     let circle: paper.Path.Circle;
@@ -173,6 +83,116 @@ function initCircleTool() {
         sendFowUpdate();
     };
     paperTool.activate();
+}
+
+function initArrowTool() {
+    baseViewRef.value?.activateDrawingLayer();
+    let arrowShaft: paper.Path;
+    let arrowHeadLeft: paper.Path;
+    let arrowHeadRight: paper.Path;
+    let arrowTip: paper.Path;
+    let startPoint: paper.Point;
+    let arrowThickness: number = 1;
+
+    paper.tool.onMouseDown = (event: paper.ToolEvent) => {
+        startPoint = event.point;
+        arrowShaft = new paper.Path({
+            strokeColor: new paper.Color('red'),
+            strokeWidth: 1,
+            fillColor: new paper.Color('red'),
+        });
+
+        arrowHeadLeft = new paper.Path({
+            strokeColor: new paper.Color('red'),
+            strokeWidth: 1,
+            fillColor: new paper.Color('red'),
+        });
+
+        arrowHeadRight = new paper.Path({
+            strokeColor: new paper.Color('red'),
+            strokeWidth: 1,
+            fillColor: new paper.Color('red'),
+        });
+
+        arrowTip = new paper.Path({
+            strokeColor: new paper.Color('red'),
+            strokeWidth: 1,
+            fillColor: new paper.Color('red'),
+        });
+    };
+
+    paper.tool.onMouseDrag = (event: paper.ToolEvent) => {
+        let endPoint = event.point;
+        let arrowLength = startPoint.getDistance(endPoint);
+        let thickness = (arrowThickness * arrowLength) / 8;
+
+        let vector = new paper.Point(
+            endPoint.x - startPoint.x,
+            endPoint.y - startPoint.y,
+        );
+        let normal = vector
+            .normalize()
+            .rotate(90, new paper.Point(0, 0))
+            .multiply(thickness / 2);
+
+        arrowShaft.removeSegments();
+        arrowShaft.addSegments([
+            new paper.Segment(startPoint.add(normal)),
+            new paper.Segment(endPoint.add(normal)),
+            new paper.Segment(endPoint.subtract(normal)),
+            new paper.Segment(startPoint.subtract(normal)),
+        ]);
+        arrowShaft.closed = true;
+
+        let arrowVector = vector.normalize(thickness * 2);
+        let arrowHeadLeftVector = arrowVector
+            .rotate(145, new paper.Point(0, 0))
+            .add(endPoint);
+        let arrowHeadRightVector = arrowVector
+            .rotate(-145, new paper.Point(0, 0))
+            .add(endPoint);
+
+        arrowHeadLeft.removeSegments();
+        arrowHeadLeft.addSegments([
+            new paper.Segment(endPoint.add(normal)),
+            new paper.Segment(arrowHeadLeftVector.add(normal)),
+            new paper.Segment(arrowHeadLeftVector.subtract(normal)),
+            new paper.Segment(endPoint.subtract(normal)),
+        ]);
+        arrowHeadLeft.closed = true;
+
+        arrowHeadRight.removeSegments();
+        arrowHeadRight.addSegments([
+            new paper.Segment(endPoint.add(normal)),
+            new paper.Segment(arrowHeadRightVector.add(normal)),
+            new paper.Segment(arrowHeadRightVector.subtract(normal)),
+            new paper.Segment(endPoint.subtract(normal)),
+        ]);
+        arrowHeadRight.closed = true;
+
+        let tipVector = vector.normalize(thickness * 0.71); // magic numbers; don't touch
+        let arrowTipBaseLeft = tipVector
+            .rotate(110, new paper.Point(0, 0))
+            .add(endPoint);
+        let arrowTipBaseRight = tipVector
+            .rotate(-110, new paper.Point(0, 0))
+            .add(endPoint);
+        let arrowTipPoint = endPoint.add(tipVector);
+
+        arrowTip.removeSegments();
+        arrowTip.addSegments([
+            new paper.Segment(arrowTipBaseLeft),
+            new paper.Segment(arrowTipPoint),
+            new paper.Segment(arrowTipBaseRight),
+        ]);
+        arrowTip.closed = true;
+    };
+
+    paper.tool.onMouseUp = (event: paper.ToolEvent) => {
+        sendDrawingUpdate();
+    };
+
+    paper.tool.activate();
 }
 
 function initFogTool() {
