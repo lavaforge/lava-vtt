@@ -3,14 +3,8 @@ import { useMapStore } from '../logic/useMapStore';
 import { ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
-import { PaperOffset } from 'paperjs-offset';
 import BaseView from './BaseView.vue';
-import type { DrawingData } from '../../../../libs/base/src/lib/drawingData';
-import type { join } from 'path';
-import {
-    fogOfWarSchema,
-    type FogOfWar,
-} from '../../../../libs/base/src/lib/fogOfWar';
+import { type FogOfWar } from '../../../../libs/base/src/lib/fogOfWar';
 
 enum Tool {
     FogOfWar,

@@ -63,9 +63,8 @@ async function initCanvas(imageRef: Ref<HTMLImageElement | null>) {
 }
 
 function initLayers() {
-    // TODO: turn layers around later (drawing must be below fow layer)
-    fowLayer = paper.project.activeLayer;
-    drawingLayer = new paper.Layer();
+    drawingLayer = paper.project.activeLayer;
+    fowLayer = new paper.Layer();
 }
 
 function activateFowLayer() {
@@ -100,7 +99,6 @@ function updateFOW(data: FogOfWar) {
 }
 
 function updateDrawing(data: DrawingData) {
-    // TODO: remove stroke width and cap -> on dmview: send arrows as filled path instead of line
     activateDrawingLayer();
     paper.project.activeLayer.removeChildren();
 
