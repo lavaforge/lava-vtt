@@ -116,8 +116,6 @@ function scaleAndPositionPath(
     path: paper.CompoundPath,
     canvasGeometry: FogOfWar['canvas'],
 ) {
-    console.log(path.pathData);
-    console.log(canvasGeometry);
     const newCanvasWidth = paper.view.size.width;
     const newCanvasHeight = paper.view.size.height;
 

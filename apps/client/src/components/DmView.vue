@@ -15,7 +15,6 @@ enum Tool {
 const mapStore = useMapStore();
 const addFow = ref(false);
 const fogOfWarColor = '#000000A0';
-const arrowThickness = 10;
 const { x: mouseX, y: mouseY } = useMouse();
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
 let currentTool = Tool.Circle;
@@ -305,7 +304,7 @@ function sendDrawingUpdate() {
                 }
             }
         })
-        .filter((element): element is FogOfWar => !!element);
+        .filter((element): element is FogOfWar => !!element); // TODO: add drawing type with color value
     console.log(drawingObject);
     mapStore.setDrawing(drawingObject, false);
 }
