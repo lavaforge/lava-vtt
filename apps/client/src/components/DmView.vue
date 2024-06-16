@@ -53,6 +53,7 @@ function initDrawingTools() {
             break;
         case Tool.Arrow:
             initArrowTool();
+            break;
     }
 }
 
