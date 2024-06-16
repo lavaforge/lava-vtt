@@ -9,6 +9,7 @@ import { type FogOfWar } from '../../../../libs/base/src/lib/fogOfWar';
 enum Tool {
     FogOfWar,
     Circle,
+    Rectangle,
     Arrow,
 }
 
@@ -28,6 +29,9 @@ function changeDrawingTool() {
             currentTool = Tool.Circle;
             break;
         case Tool.Circle:
+            currentTool = Tool.Rectangle;
+            break;
+        case Tool.Rectangle:
             currentTool = Tool.Arrow;
             break;
         case Tool.Arrow:
@@ -39,15 +43,21 @@ function changeDrawingTool() {
 function initDrawingTools() {
     switch (currentTool) {
         case Tool.FogOfWar:
-            initCircleTool();
+            initFogTool();
             break;
         case Tool.Circle:
-            initArrowTool();
+            initCircleTool();
+            break;
+        case Tool.Rectangle:
+            initRectangleTool();
             break;
         case Tool.Arrow:
-            initFogTool();
+            initArrowTool();
+            break;
     }
 }
+
+// TODO: add function to clear drawing layer + ui
 
 function initCircleTool() {
     baseViewRef.value?.activateFowLayer();
@@ -73,6 +83,35 @@ function initCircleTool() {
     paperTool.onMouseUp = (event: paper.ToolEvent) => {
         circle.closed = true;
         addFow.value ? addPathToFow(circle) : removePathFromFow(circle);
+        sendFowUpdate();
+    };
+    paperTool.activate();
+}
+
+function initRectangleTool() {
+    baseViewRef.value?.activateFowLayer();
+    let rectangle: paper.Path.Rectangle;
+    let startPoint: paper.Point;
+
+    paper.tool.onMouseDown = (event: paper.ToolEvent) => {
+        startPoint = event.point;
+        rectangle = new paper.Path.Rectangle(startPoint, new paper.Size(1, 1));
+        rectangle.strokeColor = new paper.Color('red');
+    };
+
+    paper.tool.onMouseDrag = (event: paper.ToolEvent) => {
+        let endPoint = event.point;
+        rectangle.remove();
+        rectangle = new paper.Path.Rectangle({
+            from: startPoint,
+            to: endPoint,
+        });
+        rectangle.strokeColor = new paper.Color('red');
+    };
+
+    paperTool.onMouseUp = (event: paper.ToolEvent) => {
+        rectangle.closed = true;
+        addFow.value ? addPathToFow(rectangle) : removePathFromFow(rectangle);
         sendFowUpdate();
     };
     paperTool.activate();
