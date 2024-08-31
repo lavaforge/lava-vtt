@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useMapStore } from '../logic/useMapStore';
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
 import { type FogOfWar } from '../../../../libs/base/src/lib/fogOfWar';
+import { scg } from 'ioc-service-container';
+import { useDetune } from '../logic/useDetune';
 
 enum Tool {
     FogOfWar,
@@ -55,6 +57,83 @@ function initDrawingTools() {
             initArrowTool();
             break;
     }
+}
+
+function gridLines(
+    start: paper.Point,
+    end: paper.Point,
+): {
+    h: number[];
+    v: number[];
+    length: number;
+} {
+    const hDiff = end.y - start.y;
+    const vDiff = end.x - start.x;
+
+    const diff = Math.max(Math.abs(hDiff), Math.abs(vDiff)) / 2;
+
+    const count = 13;
+    const before = Math.floor((count - 1) / 2);
+
+    const diffStart = before * -diff;
+    const diffs = Array.from({ length: count }, (_, i) => diffStart + i * diff);
+
+    return {
+        h: diffs.map((diff) => start.y + diff),
+        v: diffs.map((diff) => start.x + diff),
+        length: diff * (count - 1),
+    };
+}
+
+function initGridTool() {
+    baseViewRef.value?.activateDrawingLayer();
+    const hLines: paper.Path[] = [];
+    const vLines: paper.Path[] = [];
+
+    let startPoint: paper.Point;
+
+    function makeLines(currentPoint: paper.Point) {
+        const { h, v, length } = gridLines(startPoint, currentPoint);
+
+        h.forEach((y, idx) => {
+            hLines[idx] = new paper.Path.Line(
+                new paper.Point(startPoint.x - length / 2, y),
+                new paper.Point(startPoint.x + length / 2, y),
+            );
+            hLines[idx].strokeColor = new paper.Color('black');
+        });
+
+        v.forEach((x, idx) => {
+            vLines[idx] = new paper.Path.Line(
+                new paper.Point(x, startPoint.y - length / 2),
+                new paper.Point(x, startPoint.y + length / 2),
+            );
+            vLines[idx].strokeColor = new paper.Color('black');
+        });
+    }
+
+    function removeLines() {
+        hLines.forEach((line) => line.remove());
+        hLines.length = 0;
+        vLines.forEach((line) => line.remove());
+        vLines.length = 0;
+    }
+
+    paper.tool.onMouseDown = (event: paper.ToolEvent) => {
+        startPoint = event.point;
+
+        makeLines(event.point);
+    };
+
+    paper.tool.onMouseDrag = (event: paper.ToolEvent) => {
+        removeLines();
+        makeLines(event.point);
+    };
+
+    paper.tool.onMouseUp = (event: paper.ToolEvent) => {
+        hLines.forEach((line) => line.remove());
+        vLines.forEach((line) => line.remove());
+    };
 }
 
 // TODO: add function to clear drawing layer + ui
@@ -357,18 +436,104 @@ function getActiveLayer() {
     return paper.project.activeLayer;
 }
 
+const conduit = scg('conduit');
 useEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'x') {
         addFow.value = !addFow.value;
     } else if (e.key === 'c') {
         changeDrawingTool();
+    } else if (e.key === 'r') {
+        conduit.broadcast('iWantToKnowAllPlayerViews', { name: conduit.name });
+        showRemoteControl.value = true;
+    } else if (e.key === 'Escape') {
+        if (showRemoteControl.value) {
+            showRemoteControl.value = false;
+            names.value = [];
+            selectedPlayerView.value = null;
+        }
+    } else if (e.key.startsWith('Arrow') && selectedPlayerView.value) {
+        e.preventDefault();
+        const direction = e.key.slice(5).toLowerCase();
+        if (e.shiftKey) {
+            control(selectedPlayerView.value, {
+                type: 'zoom',
+                direction: direction === 'up' ? 'in' : 'out',
+            });
+        } else {
+            control(selectedPlayerView.value, {
+                type: 'pan',
+                direction: direction as any,
+            });
+        }
+    } else {
+        console.log(e.key);
     }
 });
+
+const names = ref<string[]>([]);
+const selectedPlayerView = ref<string | null>(null);
+useDetune(
+    conduit.attune('iAmAPlayerView', (lore) => {
+        names.value.push(lore.name);
+    }),
+);
+
+const showRemoteControl = ref(false);
 
 const baseViewRef = ref<{
     activateDrawingLayer: () => void;
     activateFowLayer: () => void;
+    imageRef: HTMLImageElement | null;
 }>();
+
+function control(
+    name: string,
+    payload:
+        | { type: 'zoom'; direction: 'in' | 'out' }
+        | { type: 'pan'; direction: 'up' | 'down' | 'left' | 'right' }
+        | { type: 'reset' },
+) {
+    conduit.invoke('controlPlayerView', name as any, payload);
+}
+
+const displayRects = ref<
+    Record<string, { x: number; y: number; width: number; height: number }>
+>({});
+
+const displayRectsViewModel = computed(() => {
+    return Object.entries(displayRects.value).map(
+        ([name, { x, y, width, height }]) => ({
+            name,
+            x,
+            y,
+            width,
+            height,
+        }),
+    );
+});
+
+useDetune(
+    conduit.attune('iWasControlled', (lore) => {
+        console.log(lore.rect);
+        displayRects.value[lore.name] = lore.rect;
+    }),
+);
+
+function fromImgCoord(num: number, type: 'x' | 'y' | 'size') {
+    const img = baseViewRef.value?.imageRef;
+    if (!img) return 0;
+
+    const factor = img.clientWidth / img.naturalWidth;
+
+    const add =
+        type === 'x'
+            ? img.getBoundingClientRect().left
+            : type === 'y'
+              ? img.getBoundingClientRect().top
+              : 0;
+
+    return num * factor + add;
+}
 </script>
 
 <template>
@@ -384,6 +549,31 @@ const baseViewRef = ref<{
         />
         <div class="vertical-line" :style="{ left: mouseX + 'px' }"></div>
         <div class="horizontal-line" :style="{ top: mouseY + 'px' }"></div>
+    </div>
+    <div class="remote-control" v-if="showRemoteControl">
+        <div class="single-control" v-for="name in names" :key="name">
+            <input
+                type="radio"
+                :id="name"
+                :value="name"
+                v-model="selectedPlayerView"
+            />
+            <label :for="name">{{ name }}</label>
+            <span @click="control(name, { type: 'reset' })">reset</span>
+        </div>
+    </div>
+    <div
+        v-for="rect in displayRectsViewModel"
+        :style="{
+            position: 'absolute',
+            left: fromImgCoord(rect.x, 'x') + 'px',
+            top: fromImgCoord(rect.y, 'y') + 'px',
+            width: fromImgCoord(rect.width, 'size') + 'px',
+            height: fromImgCoord(rect.height, 'size') + 'px',
+            border: '2px solid black',
+        }"
+    >
+        {{ rect.name }}
     </div>
 </template>
 
@@ -410,6 +600,7 @@ const baseViewRef = ref<{
     position: absolute;
     background-color: black;
     pointer-events: none;
+    display: none;
 }
 
 .vertical-line {
@@ -422,5 +613,24 @@ const baseViewRef = ref<{
     width: 100%;
     height: 1px;
     top: v-bind(mouseY) px;
+}
+
+.remote-control {
+    position: fixed;
+    top: 50vh;
+    left: 50vw;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    color: black;
+    padding: 2rem;
+}
+
+.single-control {
+    display: flex;
+    gap: 1rem;
+}
+
+.single-control span {
+    cursor: pointer;
 }
 </style>
