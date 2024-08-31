@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useMapStore } from '../logic/useMapStore';
 import { storeToRefs } from 'pinia';
-import { nextTick, type Ref, ref, watch } from 'vue';
+import { nextTick, onMounted, type Ref, ref, watch } from 'vue';
 import paper from 'paper';
 import { useEventListener } from '@vueuse/core';
 import type { DrawingData, FogOfWar } from '@base';
+import { scg } from 'ioc-service-container';
 
 let fowLayer: paper.Layer;
 let drawingLayer: paper.Layer;
@@ -135,10 +136,23 @@ function scaleAndPositionPath(
 defineExpose({
     activateDrawingLayer,
     activateFowLayer,
+    imageRef,
+});
+
+const conduit = scg('conduit');
+const name = ref('');
+onMounted(async () => {
+    await conduit.initializationFinished();
+    name.value = conduit.name;
+});
+
+conduit.attune('loggingMessage', (data) => {
+    console.log(data.data);
 });
 </script>
 
 <template>
+    <div style="position: absolute; left: 0; top: 0">{{ name }}</div>
     <template v-if="imagePath">
         <img ref="imageRef" :src="imagePath" alt="" />
         <canvas

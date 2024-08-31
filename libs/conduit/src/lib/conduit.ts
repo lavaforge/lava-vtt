@@ -31,6 +31,8 @@ export abstract class Conduit {
         Set<(glyph: Glyph) => Promise<void>>
     >();
 
+    private initializationPromises: Array<() => void> = [];
+
     /**
      * The name by which this client of the conduit is known
      *
@@ -47,6 +49,15 @@ export abstract class Conduit {
         }
 
         return this._name;
+    }
+
+    async initializationFinished(): Promise<void> {
+        if (this._name === undefined) {
+            return new Promise((resolve) =>
+                this.initializationPromises.push(resolve),
+            );
+        }
+        return Promise.resolve();
     }
 
     /**
@@ -238,6 +249,7 @@ export abstract class Conduit {
             const parsed = zodNameExchange.safeParse(glyph);
             if (parsed.success) {
                 this._name = parsed.data.name;
+                this.initializationPromises.forEach((resolve) => resolve());
                 console.log('Conduit initialized with name', this._name);
             } else {
                 console.warn(
