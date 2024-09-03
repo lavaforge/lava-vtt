@@ -10,7 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     'update:open': [open: boolean];
-    buttonPress: [text: string];
+    'update:activeButton': [id: string];
 }>();
 
 interface ButtonDto {
@@ -21,20 +21,10 @@ interface ButtonDto {
 }
 
 const buttons = ref<ButtonDto[]>([
-    { id: '1', label: '1', icon: icons.fogOfWar },
-    { id: '2', label: '2' },
-    { id: 'fog-of-war', label: 'fog of war', icon: icons.fogOfWar },
-    { id: '4', label: '4' },
-    { id: '5', label: '5' },
-    { id: '6', label: '6' },
-    { id: '7', label: '7' },
-    { id: '8', label: '8' },
-    { id: '9', label: '9' },
-    {
-        id: '0',
-        icon: icons.fogOfWar,
-        label: 'asdfölkajsdöflkjasdf ölkajsd fölakjs dfölkajs döflkja sdöflja södflkj asödlfkj asöldfkj aösldfkj aösldfjk aösldkfj aösldkfj aösldkjf aölsdkjf öalsdfj aölsdkjf aölsdkjf aölsdkfj aöslkdfj asdf',
-    },
+    { id: 'fowFreeForm', label: '1', icon: icons.fogOfWar },
+    { id: 'fowCircle', label: 'c' },
+    { id: 'fowRectangle', label: 'r' },
+    { id: 'fowArrow', label: '->' },
     { id: 'close', label: 'x' },
 ]);
 
@@ -67,7 +57,7 @@ function handlePress(text: string) {
     if (text === 'close') {
         emit('update:open', false);
     } else {
-        emit('buttonPress', text);
+        emit('update:activeButton', text);
     }
 }
 </script>

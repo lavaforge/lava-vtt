@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMapStore } from '../logic/useMapStore';
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useEventListener, useMouse } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
@@ -24,25 +24,6 @@ const { x: mouseX, y: mouseY } = useMouse();
 type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
 const currentTool = ref<Tool>(Tool.Circle);
 const paperTool = new paper.Tool();
-
-function changeDrawingTool() {
-    // TODO: later let this be controlled by UI
-
-    switch (currentTool.value) {
-        case Tool.FogOfWar:
-            currentTool.value = Tool.Circle;
-            break;
-        case Tool.Circle:
-            currentTool.value = Tool.Rectangle;
-            break;
-        case Tool.Rectangle:
-            currentTool.value = Tool.Arrow;
-            break;
-        case Tool.Arrow:
-            currentTool.value = Tool.FogOfWar;
-    }
-    initDrawingTools();
-}
 
 function setDrawingTool(tool: Tool) {
     currentTool.value = tool;
@@ -447,8 +428,6 @@ const conduit = scg('conduit');
 useEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'x') {
         addFow.value = !addFow.value;
-    } else if (e.key === 'c') {
-        changeDrawingTool();
     } else if (e.key === 'r') {
         conduit.broadcast('iWantToKnowAllPlayerViews', { name: conduit.name });
         showRemoteControl.value = true;
@@ -544,16 +523,23 @@ function fromImgCoord(num: number, type: 'x' | 'y' | 'size') {
 
 const toolbarOpen = ref(false);
 
-const activeButton = computed(() =>
-    currentTool.value === Tool.FogOfWar ? '1' : '2',
-);
-function handleButtonPress(text: string) {
-    if (text === '1') {
-        setDrawingTool(Tool.FogOfWar);
-    } else if (text === '2') {
-        setDrawingTool(Tool.Circle);
+const activeToolbarButton = ref('');
+watch(activeToolbarButton, (newValue) => {
+    switch (newValue) {
+        case 'fowFreeForm':
+            setDrawingTool(Tool.FogOfWar);
+            break;
+        case 'fowCircle':
+            setDrawingTool(Tool.Circle);
+            break;
+        case 'fowRectangle':
+            setDrawingTool(Tool.Rectangle);
+            break;
+        case 'fowArrow':
+            setDrawingTool(Tool.Arrow);
+            break;
     }
-}
+});
 </script>
 
 <template>
@@ -587,16 +573,22 @@ function handleButtonPress(text: string) {
         <Toolbar
             v-model:open="toolbarOpen"
             class="toolbar"
-            @button-press="handleButtonPress"
-            :active-button="activeButton"
+            v-model:active-button="activeToolbarButton"
         />
         <!--        <div-->
         <!--            class="indicator"-->
         <!--            :style="{ 'background-color': addFow ? 'black' : 'white' }"-->
         <!--        />-->
     </div>
-    <div class="remote-control" v-if="showRemoteControl">
-        <div class="single-control" v-for="name in names" :key="name">
+    <div
+        class="remote-control"
+        v-if="showRemoteControl"
+    >
+        <div
+            class="single-control"
+            v-for="name in names"
+            :key="name"
+        >
             <input
                 type="radio"
                 :id="name"
