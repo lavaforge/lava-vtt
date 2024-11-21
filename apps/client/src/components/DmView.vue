@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMapStore } from '../logic/useMapStore';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { useEventListener, useMouse } from '@vueuse/core';
+import { useEventListener, useMouse, useLocalStorage } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
 import { type FogOfWar } from '../../../../libs/base/src/lib/fogOfWar';
@@ -15,14 +15,22 @@ enum Tool {
     Circle,
     Rectangle,
     Arrow,
+    Polygon,
 }
 
 const mapStore = useMapStore();
 const addFow = ref(false);
 const fogOfWarColor = '#000000A0';
 const { x: mouseX, y: mouseY } = useMouse();
-type PaperMouseEvent = { point: paper.Segment | paper.PointLike | number[] };
-const currentTool = ref<Tool>(Tool.Circle);
+type PaperMouseEvent = {
+    point: paper.Segment | paper.PointLike | number[];
+    event: MouseEvent;
+};
+
+// IMPORTANT: change both together
+const currentTool = ref<Tool>(Tool.Rectangle);
+const activeToolbarButton = ref('fowRectangle');
+
 const paperTool = new paper.Tool();
 
 function setDrawingTool(tool: Tool) {
@@ -30,7 +38,16 @@ function setDrawingTool(tool: Tool) {
     initDrawingTools();
 }
 
+function resetPaperTool() {
+    paperTool.onMouseUp = () => {};
+    paperTool.onMouseDown = () => {};
+    paperTool.onMouseDrag = () => {};
+    paperTool.onMouseMove = () => {};
+}
+
 function initDrawingTools() {
+    resetPaperTool();
+    console.error('init');
     switch (currentTool.value) {
         case Tool.FogOfWar:
             initFogTool();
@@ -43,6 +60,9 @@ function initDrawingTools() {
             break;
         case Tool.Arrow:
             initArrowTool();
+            break;
+        case Tool.Polygon:
+            initPolygonTool();
             break;
     }
 }
@@ -324,6 +344,40 @@ function initFogTool() {
     paperTool.activate();
 }
 
+function initPolygonTool() {
+    baseViewRef.value?.activateFowLayer();
+    let path: paper.Path | undefined = undefined;
+    paperTool.onMouseUp = (event: PaperMouseEvent) => {
+        if (!path) {
+            path = new paper.Path();
+            path.strokeColor = new paper.Color(addFow.value ? 'black' : 'red');
+            path.add(event.point);
+        }
+        path.add(event.point);
+
+        if (event.event.button === 2) {
+            path.closed = true;
+            path.fillColor = new paper.Color('#00000080');
+            // path.simplify();
+
+            addFow.value ? addPathToFow(path) : removePathFromFow(path);
+
+            sendFowUpdate();
+
+            path = undefined;
+        }
+    };
+
+    paperTool.onMouseMove = (event: PaperMouseEvent) => {
+        if (!path) return;
+
+        path.lastSegment?.remove();
+        path.add(event.point);
+    };
+
+    paperTool.activate();
+}
+
 function addPathToFow(path: paper.Path) {
     baseViewRef.value?.activateFowLayer();
     let combinedPath: paper.Path | paper.PathItem = path;
@@ -415,6 +469,20 @@ function sendDrawingUpdate() {
     mapStore.setDrawing(drawingObject, false);
 }
 
+function clearDrawingLayer() {
+    baseViewRef.value?.activateDrawingLayer();
+    getActiveLayer().removeChildren();
+    sendDrawingUpdate();
+    initDrawingTools();
+}
+
+function clearFowLayer() {
+    baseViewRef.value?.activateFowLayer();
+    getActiveLayer().removeChildren();
+    sendFowUpdate();
+    initDrawingTools();
+}
+
 function getFirstActiveLayerChild() {
     if (getActiveLayer().children.length == 1)
         return getActiveLayer().children.at(0);
@@ -428,7 +496,7 @@ const conduit = scg('conduit');
 useEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'x') {
         addFow.value = !addFow.value;
-    } else if (e.key === 'r') {
+    } else if (e.key === 'r' && !e.ctrlKey && !e.metaKey) {
         conduit.broadcast('iWantToKnowAllPlayerViews', { name: conduit.name });
         showRemoteControl.value = true;
     } else if (e.key === 'Escape') {
@@ -451,8 +519,12 @@ useEventListener('keydown', (e: KeyboardEvent) => {
                 direction: direction as any,
             });
         }
+    } else if (e.key === 'Q' && e.shiftKey) {
+        clearDrawingLayer();
+    } else if (e.key === 'W' && e.shiftKey) {
+        clearFowLayer();
     } else {
-        console.log(e.key);
+        console.log(e.key, e);
     }
 });
 
@@ -521,9 +593,8 @@ function fromImgCoord(num: number, type: 'x' | 'y' | 'size') {
     return num * factor + add;
 }
 
-const toolbarOpen = ref(false);
+const toolbarOpen = useLocalStorage('dmViewToolbarOpen', false);
 
-const activeToolbarButton = ref('');
 watch(activeToolbarButton, (newValue) => {
     switch (newValue) {
         case 'fowFreeForm':
@@ -538,17 +609,32 @@ watch(activeToolbarButton, (newValue) => {
         case 'fowArrow':
             setDrawingTool(Tool.Arrow);
             break;
+        case 'fowPolygon':
+            setDrawingTool(Tool.Polygon);
+            break;
+        default:
+            console.warn(
+                `activeToolbarButton "${activeToolbarButton}" doesn't have a corresponding drawing tool!`,
+            );
     }
 });
+
+function buttonTrigger(button: string) {
+    if (button === 'fowState') {
+        addFow.value = !addFow.value;
+    }
+}
 </script>
 
 <template>
     <div
         ref="containerRef"
         class="container"
+        @contextmenu.prevent
     >
         <BaseView
             ref="baseViewRef"
+            class="base-view"
             @image-loaded="initDrawingTools"
             :fog-of-war-color="fogOfWarColor"
         />
@@ -574,6 +660,8 @@ watch(activeToolbarButton, (newValue) => {
             v-model:open="toolbarOpen"
             class="toolbar"
             v-model:active-button="activeToolbarButton"
+            :is-adding-fow="addFow"
+            @trigger="buttonTrigger"
         />
         <!--        <div-->
         <!--            class="indicator"-->
@@ -608,6 +696,7 @@ watch(activeToolbarButton, (newValue) => {
             width: fromImgCoord(rect.width, 'size') + 'px',
             height: fromImgCoord(rect.height, 'size') + 'px',
             border: '2px solid black',
+            'pointer-events': 'none',
         }"
     >
         {{ rect.name }}
@@ -631,6 +720,10 @@ watch(activeToolbarButton, (newValue) => {
     justify-content: center;
     align-items: center;
     height: 100vh;
+}
+
+:deep(.base-view) {
+    cursor: crosshair;
 }
 
 .toolbar {
@@ -660,7 +753,7 @@ watch(activeToolbarButton, (newValue) => {
     position: absolute;
     background-color: black;
     pointer-events: none;
-    display: none;
+    // display: none;
 }
 
 .vertical-line {

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onBeforeUnmount, onMounted, type Ref, ref } from 'vue';
 import panzoom from 'panzoom';
-import { useWakeLock } from '@vueuse/core';
+import { useWakeLock, onKeyUp } from '@vueuse/core';
 import BaseView from './BaseView.vue';
 import { scg } from 'ioc-service-container';
 import { useDetune } from '../logic/useDetune';
@@ -60,6 +60,10 @@ async function toggleFullscreen() {
     }
 }
 
+onKeyUp('f', async () => {
+    await toggleFullscreen();
+});
+
 const displayName = ref('');
 useDetune(
     conduit.attune('iWantToKnowAllPlayerViews', (lore) => {
@@ -81,7 +85,7 @@ useDetune(
                 break;
             case 'zoom':
                 const factor = lore.direction === 'in' ? 1.1 : 0.9;
-                panZoomInstance.smoothZoom(
+                panZoomInstance.zoomTo(
                     document.body.clientWidth / 2,
                     document.body.clientHeight / 2,
                     factor,
@@ -101,7 +105,7 @@ useDetune(
                         : lore.direction === 'down'
                           ? -delta
                           : 0) * scale;
-                panZoomInstance.moveBy(diffX, diffY, true);
+                panZoomInstance.moveBy(diffX, diffY, false);
                 break;
         }
 
@@ -146,10 +150,19 @@ const baseViewRef = ref<{
 </script>
 
 <template>
-    <div ref="containerRef" class="container">
-        <BaseView @image-loaded="resetZoom" ref="baseViewRef" />
+    <div
+        ref="containerRef"
+        class="container"
+    >
+        <BaseView
+            @image-loaded="resetZoom"
+            ref="baseViewRef"
+        />
     </div>
-    <div class="name-display" v-if="displayName">
+    <div
+        class="name-display"
+        v-if="displayName"
+    >
         {{ displayName }}
     </div>
 </template>
@@ -161,6 +174,7 @@ const baseViewRef = ref<{
     justify-content: center;
     align-items: center;
     height: 100vh;
+    cursor: none;
 }
 
 .name-display {

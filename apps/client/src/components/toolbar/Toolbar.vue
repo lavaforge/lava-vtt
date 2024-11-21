@@ -6,11 +6,13 @@ import { icons } from '../../icons';
 const props = defineProps<{
     open: boolean;
     activeButton?: string;
+    isAddingFow?: boolean;
 }>();
 
 const emit = defineEmits<{
     'update:open': [open: boolean];
     'update:activeButton': [id: string];
+    trigger: [id: string];
 }>();
 
 interface ButtonDto {
@@ -18,13 +20,22 @@ interface ButtonDto {
     label: string;
     icon?: string;
     subButtons?: ButtonDto[];
+    backgroundColor?: () => string;
+    triggerable?: boolean;
 }
 
 const buttons = ref<ButtonDto[]>([
-    { id: 'fowFreeForm', label: '1', icon: icons.fogOfWar },
+    { id: 'fowFreeForm', label: 'free form', icon: icons.fogOfWar },
     { id: 'fowCircle', label: 'c' },
     { id: 'fowRectangle', label: 'r' },
+    { id: 'fowPolygon', label: 'p' },
     { id: 'fowArrow', label: '->' },
+    {
+        id: 'fowState',
+        label: 's',
+        triggerable: true,
+        backgroundColor: () => (props.isAddingFow ? 'black' : 'white'),
+    },
     { id: 'close', label: 'x' },
 ]);
 
@@ -54,8 +65,11 @@ watch(
 );
 
 function handlePress(text: string) {
+    const dto = buttons.value.find((b) => b.id === text);
     if (text === 'close') {
         emit('update:open', false);
+    } else if (dto?.triggerable) {
+        emit('trigger', dto.id);
     } else {
         emit('update:activeButton', text);
     }
@@ -77,6 +91,7 @@ function handlePress(text: string) {
             :alt-text="btn.label"
             :tooltip="btn.label"
             :icon="btn.icon"
+            :background-color="btn.backgroundColor?.()"
             @press="handlePress(btn.id)"
         />
     </div>
