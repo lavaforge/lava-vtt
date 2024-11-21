@@ -152,14 +152,18 @@ conduit.attune('loggingMessage', (data) => {
 </script>
 
 <template>
-    <div style="position: absolute; left: 0; top: 0">{{ name }}</div>
     <template v-if="imagePath">
-        <img ref="imageRef" :src="imagePath" alt="" />
+        <img
+            ref="imageRef"
+            :src="imagePath"
+            alt=""
+        />
         <canvas
             ref="canvasRef"
             :height="height"
             :width="width"
             data-paper-hidpi="off"
+            v-bind="$attrs"
         />
     </template>
     <div v-else>no image loaded</div>

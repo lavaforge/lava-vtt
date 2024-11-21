@@ -9,6 +9,7 @@ withDefaults(
         active?: boolean;
         icon?: string;
         tooltip: string;
+        backgroundColor?: string;
     }>(),
     { tooltipPos: 'top', active: false },
 );
@@ -92,6 +93,7 @@ useResizeObserver(
         class="toolbar-button-host"
         @click="$emit('press')"
         :class="{ active }"
+        :style="{ backgroundColor: backgroundColor || undefined }"
         ref="hostRef"
     >
         <img
