@@ -17,6 +17,7 @@ current_image.bkp
 *.sh
 *.png
 *.svg
+*.ico
 
 LICENSE
 AUTHORS
