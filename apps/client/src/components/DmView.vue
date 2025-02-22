@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useMapStore } from '../logic/useMapStore';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useEventListener, useMouse, useLocalStorage } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
-import { type FogOfWar } from '../../../../libs/base/src/lib/fogOfWar';
+import { type FogOfWar } from '@base';
 import { scg } from 'ioc-service-container';
 import { useDetune } from '../logic/useDetune';
 import Toolbar from './toolbar/Toolbar.vue';

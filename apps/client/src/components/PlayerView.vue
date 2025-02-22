@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, type Ref, ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import panzoom from 'panzoom';
 import { useWakeLock, onKeyUp } from '@vueuse/core';
 import BaseView from './BaseView.vue';
@@ -10,6 +10,30 @@ const conduit = scg('conduit');
 
 let panZoomInstance: ReturnType<typeof panzoom> | null = null;
 const containerRef = ref<HTMLDivElement | null>(null);
+
+const isCursorHidden = ref(false);
+let cursorHideTimeout: NodeJS.Timeout | undefined;
+
+/**
+ * Function shows cursor and starts 5 second time to hide it again
+ */
+const resetCursorTimer = () => {
+    isCursorHidden.value = false;
+    clearTimeout(cursorHideTimeout);
+
+    cursorHideTimeout = setTimeout(() => {
+        isCursorHidden.value = true;
+    }, 5000);
+};
+
+/** Removes all potential event listeners of the curser timer */
+const deregisterHideCursor = () => {
+    window.removeEventListener('mousemove', resetCursorTimer);
+    window.removeEventListener('keydown', resetCursorTimer);
+    clearTimeout(cursorHideTimeout);
+    isCursorHidden.value = false;
+};
+onBeforeUnmount(deregisterHideCursor);
 
 const resetZoom = () => {
     panZoomInstance?.dispose();
@@ -50,16 +74,27 @@ const resetZoom = () => {
 };
 
 const { request, release } = useWakeLock();
+
+/**
+ * Toggle the browsers fullscreen mode
+ */
 async function toggleFullscreen() {
     if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen?.();
-        await request('screen');
+        await Promise.all([
+            document.documentElement.requestFullscreen?.(),
+            request('screen'),
+        ]);
+
+        window.addEventListener('mousemove', resetCursorTimer);
+        window.addEventListener('keydown', resetCursorTimer);
+        resetCursorTimer();
     } else {
-        await document.exitFullscreen?.();
-        await release();
+        deregisterHideCursor();
+        await Promise.all([document.exitFullscreen?.(), release()]);
     }
 }
 
+// Toggle the browsers fullscreen mode when pressing "f" key
 onKeyUp('f', async () => {
     await toggleFullscreen();
 });
@@ -153,6 +188,7 @@ const baseViewRef = ref<{
     <div
         ref="containerRef"
         class="container"
+        :class="{ 'cursor-hidden': isCursorHidden }"
     >
         <BaseView
             @image-loaded="resetZoom"
@@ -174,7 +210,6 @@ const baseViewRef = ref<{
     justify-content: center;
     align-items: center;
     height: 100vh;
-    cursor: none;
 }
 
 .name-display {
@@ -185,5 +220,9 @@ const baseViewRef = ref<{
     color: black;
     padding: 2rem;
     transform: translate(-50%, -50%);
+}
+
+.cursor-hidden {
+    cursor: none;
 }
 </style>
