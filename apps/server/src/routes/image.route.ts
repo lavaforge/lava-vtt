@@ -23,23 +23,39 @@ router.get('/:hash', async (req, res) => {
     ).send(image.content.buffer);
 });
 
-router.post('/', raw({ limit: '15mb' }), async (req, res) => {
-    const hash = hashBuffer(req.body);
+router.post(
+    '/',
+    raw({
+        limit: '15mb',
+        type: [
+            'application/octet-stream',
+            'image/png',
+            'image/jpeg',
+            'image/*',
+        ],
+    }),
+    async (req, res) => {
+        if (!Buffer.isBuffer(req.body)) {
+            return res.status(400).send('Invalid binary data');
+        }
 
-    const db = scg('Db');
+        const hash = hashBuffer(req.body);
 
-    const binary = new Binary(req.body);
+        const db = scg('Db');
 
-    await db
-        .collection('images')
-        .updateOne(
-            { hash },
-            { $setOnInsert: { content: binary, hash } },
-            { upsert: true },
-        );
+        const binary = new Binary(req.body);
 
-    res.send(hash);
-});
+        await db
+            .collection('images')
+            .updateOne(
+                { hash },
+                { $setOnInsert: { content: binary, hash } },
+                { upsert: true },
+            );
+
+        res.send(hash);
+    },
+);
 
 export { router as imageRouter };
 
