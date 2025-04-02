@@ -5,8 +5,8 @@
     "type": "module",
     "scripts": {
         "dev": "concurrently 'npm:dev:frontend' 'npm:dev:backend'",
-        "dev:frontend": "vite",
-        "dev:backend": "nodemon server/index.js",
+        "dev:frontend": "npx nx serve client",
+        "dev:backend": "npx nx serve server",
         "build": "vue-tsc && vite build",
         "preview": "vite preview",
         "prepare": "husky install"

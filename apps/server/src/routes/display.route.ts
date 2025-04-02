@@ -3,6 +3,11 @@ import { scg } from 'ioc-service-container';
 
 const displayRouter = Router();
 
+/**
+ * POST route for setting the current hash
+ * @param req The request object
+ * @param res The response object
+ */
 displayRouter.post('/', (req, res) => {
     const conduit = scg('conduit');
     const displayStore = scg('DisplayStore');
@@ -13,6 +18,11 @@ displayRouter.post('/', (req, res) => {
     res.send('ok');
 });
 
+/**
+ * GET route for getting the current hash
+ * @param req The request object
+ * @param res The response object
+ */
 displayRouter.get('/', (req, res) => {
     const displayStore = scg('DisplayStore');
 
