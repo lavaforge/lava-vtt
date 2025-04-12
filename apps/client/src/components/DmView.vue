@@ -740,9 +740,9 @@ function buttonTrigger(button: string) {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
     height: 100%;
     flex: 1;
+    min-width: 0; // Important for flex child to respect parent's width
     min-height: 0; // Important for flex child to respect parent's height
 }
 
