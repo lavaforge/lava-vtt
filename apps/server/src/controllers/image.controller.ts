@@ -42,7 +42,7 @@ export class ImageController {
         page: number = 1,
         pageSize: number = 10,
     ): Promise<{
-        images: { hash: string; content: Binary }[];
+        images: { hash: string; createdAt: Date }[];
         total: number;
         page: number;
         pageSize: number;
@@ -53,7 +53,7 @@ export class ImageController {
         const images = await this.db
             .collection('images')
             .find({})
-            .sort({ _id: -1 }) // _id contains 4 bytes of timestamp so this orders by most recent
+            .sort({ _id: -1 }) // _id contains 4 bytes of timestamp so this orders by last created
             .skip(skip)
             .limit(pageSize)
             .toArray();
@@ -61,7 +61,12 @@ export class ImageController {
         return {
             images: images.map((image) => ({
                 hash: image.hash,
-                content: image.content,
+                createdAt:
+                    image.createdAt ||
+                    new Date(
+                        parseInt(image._id.toString().substring(0, 8), 16) *
+                            1000,
+                    ),
             })),
             total,
             page,
@@ -77,6 +82,7 @@ export class ImageController {
     async saveImage(buffer: Buffer): Promise<string> {
         const hash = this.hashBuffer(buffer);
         const binary = new Binary(buffer as unknown as Uint8Array);
+        const createdAt = new Date();
 
         // TODO: Consider creating thumbnails
 
@@ -84,7 +90,7 @@ export class ImageController {
             .collection('images')
             .updateOne(
                 { hash },
-                { $setOnInsert: { content: binary, hash } },
+                { $setOnInsert: { content: binary, hash, createdAt } },
                 { upsert: true },
             );
 

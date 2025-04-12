@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import { useEventListener, useMouse, useLocalStorage } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from './BaseView.vue';
+import ImageHistory from './image-history/ImageHistory.vue';
 import { type FogOfWar } from '@base';
 import { scg } from 'ioc-service-container';
 import { useDetune } from '../logic/useDetune';
@@ -636,35 +637,75 @@ function buttonTrigger(button: string) {
 </script>
 
 <template>
-    <div
-        ref="containerRef"
-        class="container"
-        @contextmenu.prevent
-    >
-        <BaseView
-            ref="baseViewRef"
-            class="base-view"
-            @image-loaded="initDrawingTools"
-            :fog-of-war-color="fogOfWarColor"
-        />
+    <div class="content">
         <div
-            class="vertical-line"
-            :style="{ left: mouseX + 'px' }"
-        ></div>
-        <div
-            class="horizontal-line"
-            :style="{ top: mouseY + 'px' }"
-        ></div>
-        <Transition name="fade">
-            <ToolbarButton
-                v-if="!toolbarOpen"
-                class="toolbar-open-button"
-                @press="toolbarOpen = !toolbarOpen"
-                alt-text="="
-                tooltip="open toolbar"
-                tooltip-pos="bottom"
+            ref="containerRef"
+            class="editor-container"
+            @contextmenu.prevent
+        >
+            <BaseView
+                ref="baseViewRef"
+                class="base-view"
+                @image-loaded="initDrawingTools"
+                :fog-of-war-color="fogOfWarColor"
             />
-        </Transition>
+            <div
+                class="vertical-line"
+                :style="{ left: mouseX + 'px' }"
+            ></div>
+            <div
+                class="horizontal-line"
+                :style="{ top: mouseY + 'px' }"
+            ></div>
+            <Transition name="fade">
+                <ToolbarButton
+                    v-if="!toolbarOpen"
+                    class="toolbar-open-button"
+                    @press="toolbarOpen = !toolbarOpen"
+                    alt-text="="
+                    tooltip="open toolbar"
+                    tooltip-pos="bottom"
+                />
+            </Transition>
+
+            <!--        <div-->
+            <!--            class="indicator"-->
+            <!--            :style="{ 'background-color': addFow ? 'black' : 'white' }"-->
+            <!--        />-->
+        </div>
+        <div
+            class="remote-control"
+            v-if="showRemoteControl"
+        >
+            <div
+                class="single-control"
+                v-for="name in names"
+                :key="name"
+            >
+                <input
+                    type="radio"
+                    :id="name"
+                    :value="name"
+                    v-model="selectedPlayerView"
+                />
+                <label :for="name">{{ name }}</label>
+                <span @click="control(name, { type: 'reset' })">reset</span>
+            </div>
+        </div>
+        <div
+            v-for="rect in displayRectsViewModel"
+            :style="{
+                position: 'absolute',
+                left: fromImgCoord(rect.x, 'x') + 'px',
+                top: fromImgCoord(rect.y, 'y') + 'px',
+                width: fromImgCoord(rect.width, 'size') + 'px',
+                height: fromImgCoord(rect.height, 'size') + 'px',
+                border: '2px solid black',
+                'pointer-events': 'none',
+            }"
+        >
+            {{ rect.name }}
+        </div>
         <Toolbar
             v-model:open="toolbarOpen"
             class="toolbar"
@@ -672,43 +713,7 @@ function buttonTrigger(button: string) {
             :is-adding-fow="addFow"
             @trigger="buttonTrigger"
         />
-        <!--        <div-->
-        <!--            class="indicator"-->
-        <!--            :style="{ 'background-color': addFow ? 'black' : 'white' }"-->
-        <!--        />-->
-    </div>
-    <div
-        class="remote-control"
-        v-if="showRemoteControl"
-    >
-        <div
-            class="single-control"
-            v-for="name in names"
-            :key="name"
-        >
-            <input
-                type="radio"
-                :id="name"
-                :value="name"
-                v-model="selectedPlayerView"
-            />
-            <label :for="name">{{ name }}</label>
-            <span @click="control(name, { type: 'reset' })">reset</span>
-        </div>
-    </div>
-    <div
-        v-for="rect in displayRectsViewModel"
-        :style="{
-            position: 'absolute',
-            left: fromImgCoord(rect.x, 'x') + 'px',
-            top: fromImgCoord(rect.y, 'y') + 'px',
-            width: fromImgCoord(rect.width, 'size') + 'px',
-            height: fromImgCoord(rect.height, 'size') + 'px',
-            border: '2px solid black',
-            'pointer-events': 'none',
-        }"
-    >
-        {{ rect.name }}
+        <ImageHistory />
     </div>
 </template>
 
@@ -723,12 +728,22 @@ function buttonTrigger(button: string) {
     opacity: 0;
 }
 
-.container {
+.content {
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+}
+
+.editor-container {
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0; // Important for flex child to respect parent's height
 }
 
 :deep(.base-view) {
