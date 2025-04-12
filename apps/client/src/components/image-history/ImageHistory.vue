@@ -2,8 +2,17 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { scg } from 'ioc-service-container';
 
+/**
+ * The image history item interface
+ */
 interface ImageHistoryItem {
+    /**
+     * The hash of the image
+     */
     hash: string;
+    /**
+     * The timestamp of the image
+     */
     createdAt: string;
 }
 
@@ -14,17 +23,7 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const pageSize = ref(10);
 const apiUrl = scg('apiUrl');
-
-/**
- * Extracts the creation date from a MongoDB ObjectId
- * @param id - The MongoDB ObjectId
- * @returns The creation date
- */
-function getCreationDate(id: string): Date {
-    // Extract the timestamp from the ObjectId (first 4 bytes)
-    const timestamp = parseInt(id.substring(0, 8), 16) * 1000;
-    return new Date(timestamp);
-}
+const selectedImage = ref<string | null>(null);
 
 /**
  * Fetches the images from the server
@@ -53,15 +52,45 @@ async function fetchImages(page: number = 1) {
     }
 }
 
+/**
+ * Goes to the next page
+ */
 function nextPage() {
     if (currentPage.value < totalPages.value) {
         fetchImages(currentPage.value + 1);
     }
 }
 
+/**
+ * Goes to the previous page
+ */
 function prevPage() {
     if (currentPage.value > 1) {
         fetchImages(currentPage.value - 1);
+    }
+}
+
+/**
+ * Sets the display image
+ * @param hash - The hash of the image to set as the display image
+ */
+async function setDisplayImage(hash: string) {
+    try {
+        const response = await fetch(`${apiUrl}/api/display`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ hash }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to set display image');
+        }
+
+        selectedImage.value = hash;
+    } catch (err) {
+        console.error('Error setting display image:', err);
     }
 }
 
@@ -93,6 +122,8 @@ onMounted(() => {
                 v-for="image in images"
                 :key="image.hash"
                 class="image"
+                :class="{ selected: selectedImage === image.hash }"
+                @click="setDisplayImage(image.hash)"
             >
                 <img :src="`${apiUrl}/api/image/${image.hash}`" />
                 <span class="timestamp">{{
@@ -153,6 +184,21 @@ onMounted(() => {
         gap: 1rem;
 
         .image {
+            cursor: pointer;
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+
+            &:hover {
+                transform: scale(1.02);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+
+            &.selected {
+                border: 2px solid #fbb457;
+                border-radius: 0.25rem;
+            }
+
             img {
                 width: 100%;
                 height: auto;
