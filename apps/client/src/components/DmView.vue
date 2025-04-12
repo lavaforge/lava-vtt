@@ -45,6 +45,9 @@ function resetPaperTool() {
     paperTool.onMouseMove = () => {};
 }
 
+/**
+ * @description Initialize drawing tools
+ */
 function initDrawingTools() {
     resetPaperTool();
     console.error('init');
@@ -67,6 +70,9 @@ function initDrawingTools() {
     }
 }
 
+/**
+ * @description Initialize grid tool
+ */
 function gridLines(
     start: paper.Point,
     end: paper.Point,
@@ -93,6 +99,9 @@ function gridLines(
     };
 }
 
+/**
+ * @description Initialize grid tool
+ */
 function initGridTool() {
     baseViewRef.value?.activateDrawingLayer();
     const hLines: paper.Path[] = [];

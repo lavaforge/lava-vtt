@@ -15,28 +15,53 @@ const emit = defineEmits<{
     trigger: [id: string];
 }>();
 
-interface ButtonDto {
+/**
+ * @description Button props
+ */
+interface ButtonProps {
     id: string;
     label: string;
-    icon?: string;
-    subButtons?: ButtonDto[];
+    icon?: string | (() => string);
+    subButtons?: ButtonProps[];
     backgroundColor?: () => string;
     triggerable?: boolean;
+    tooltip?: string;
 }
 
-const buttons = ref<ButtonDto[]>([
-    { id: 'fowFreeForm', label: 'free form', icon: icons.fogOfWar },
-    { id: 'fowCircle', label: 'c' },
-    { id: 'fowRectangle', label: 'r' },
-    { id: 'fowPolygon', label: 'p' },
-    { id: 'fowArrow', label: '->' },
+const buttons = ref<ButtonProps[]>([
+    {
+        id: 'fowFreeForm',
+        label: 'free form',
+        tooltip: 'free form',
+        icon: icons.fogOfWar,
+    },
+    { id: 'fowCircle', label: 'circle', tooltip: 'circle', icon: icons.circle },
+    {
+        id: 'fowRectangle',
+        label: 'rectangle',
+        tooltip: 'rectangle',
+        icon: icons.square,
+    },
+    {
+        id: 'fowPolygon',
+        label: 'polygon',
+        tooltip: 'polygon',
+        icon: icons.polygon,
+    },
+    { id: 'fowArrow', label: 'arrow', tooltip: 'arrow', icon: icons.arrow }, // TODO: move to other toolbar than fog of war
     {
         id: 'fowState',
-        label: 's',
+        label: 'state',
+        tooltip: 'toggle subtract/add fog of war',
         triggerable: true,
-        backgroundColor: () => (props.isAddingFow ? 'black' : 'white'),
+        icon: () => (props.isAddingFow ? icons.cloudMinus : icons.cloudPlus),
     },
-    { id: 'close', label: 'x' },
+    {
+        id: 'close',
+        label: 'close',
+        tooltip: 'close fog of war toolbar',
+        icon: icons.close,
+    },
 ]);
 
 const toggle = ref(props.open);
@@ -64,6 +89,10 @@ watch(
     },
 );
 
+/**
+ * @description Handle button press
+ * @param text - Button id
+ */
 function handlePress(text: string) {
     const dto = buttons.value.find((b) => b.id === text);
     if (text === 'close') {
@@ -82,15 +111,15 @@ function handlePress(text: string) {
         class="toolbar-host"
     >
         <ToolbarButton
-            :key="btn.label"
+            :key="btn.id"
             v-for="btn in buttons"
             :class="['button', { active: btn.id === props.activeButton }]"
             :style="{
                 opacity: opacity,
             }"
             :alt-text="btn.label"
-            :tooltip="btn.label"
-            :icon="btn.icon"
+            :tooltip="btn.tooltip ?? btn.label"
+            :icon="typeof btn.icon === 'function' ? btn.icon() : btn.icon"
             :background-color="btn.backgroundColor?.()"
             @press="handlePress(btn.id)"
         />
@@ -101,7 +130,6 @@ function handlePress(text: string) {
 .toolbar-host {
     display: flex;
     gap: 1rem;
-
     padding: 0.5rem;
 
     .button {
