@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { useMapStore } from '../../logic/useMapStore';
-import { computed, ref, watch } from 'vue';
-import { useEventListener, useMouse, useLocalStorage } from '@vueuse/core';
+import { computed, ref } from 'vue';
+import { useEventListener } from '@vueuse/core';
 import ImageHistory from './ImageHistory.vue';
 import Dropzone from './Dropzone.vue';
 import { scg } from 'ioc-service-container';
 import { useDetune } from '../../logic/useDetune';
 import ImageEditor from './ImageEditor.vue';
 
-const mapStore = useMapStore();
 const conduit = scg('conduit');
-const { x: mouseX, y: mouseY } = useMouse();
 
 const names = ref<string[]>([]);
 const selectedPlayerView = ref<string | null>(null);
@@ -53,6 +50,9 @@ useEventListener('keydown', (e: KeyboardEvent) => {
     }
 });
 
+/**
+ * Reference to the image editor component
+ */
 const imageEditorRef = ref<{
     clearDrawingLayer: () => void;
     clearFowLayer: () => void;
@@ -61,6 +61,11 @@ const imageEditorRef = ref<{
     };
 }>();
 
+/**
+ * Controls the player view
+ * @param name - The name of the player view to control
+ * @param payload - The payload to control the player view
+ */
 function control(
     name: string,
     payload:

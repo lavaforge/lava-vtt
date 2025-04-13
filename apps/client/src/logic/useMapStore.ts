@@ -5,8 +5,15 @@ import type { FogOfWar } from '@base';
 import type { DrawingData } from '@base';
 import { refWithControl } from '@vueuse/core';
 
+/**
+ * Pinia store for managing map data
+ * Provides functionality to fetch and update fog of war and drawing data
+ * TODO: May rename to imageStore or something similar, in general the terminology is not nice currently
+ */
 export const useMapStore = defineStore('map', () => {
+    /** Conduit instance for communication */
     const conduit = scg('conduit');
+    /** API URL for image endpoints */
     const apiUrl = scg('apiUrl');
 
     const currentHash = ref<string>();
