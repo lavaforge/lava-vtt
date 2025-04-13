@@ -5,6 +5,7 @@ import { useEventListener, useMouse, useLocalStorage } from '@vueuse/core';
 import paper from 'paper';
 import BaseView from '../BaseView.vue';
 import ImageHistory from './ImageHistory.vue';
+import Dropzone from './Dropzone.vue';
 import type { FogOfWar } from '@base';
 import { scg } from 'ioc-service-container';
 import { useDetune } from '../../logic/useDetune';
@@ -26,6 +27,7 @@ import {
 } from './fow-tools';
 
 const mapStore = useMapStore();
+const conduit = scg('conduit');
 const addFow = ref(false);
 const { x: mouseX, y: mouseY } = useMouse();
 
@@ -173,7 +175,6 @@ function clearFowLayer() {
     initDrawingTools();
 }
 
-const conduit = scg('conduit');
 useEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'x') {
         addFow.value = !addFow.value;
@@ -306,6 +307,10 @@ watch(activeToolbarButton, (newValue) => {
     }
 });
 
+/**
+ * Toggles the addFow value
+ * @param button - The button that was pressed
+ */
 function buttonTrigger(button: string) {
     if (button === 'fowState') {
         console.log('Toggling addFow from', addFow.value, 'to', !addFow.value);
@@ -316,6 +321,7 @@ function buttonTrigger(button: string) {
 
 <template>
     <div class="content">
+        <Dropzone />
         <div
             ref="containerRef"
             class="editor-container"
@@ -345,12 +351,8 @@ function buttonTrigger(button: string) {
                     tooltip-pos="bottom"
                 />
             </Transition>
-
-            <!--        <div-->
-            <!--            class="indicator"-->
-            <!--            :style="{ 'background-color': addFow ? 'black' : 'white' }"-->
-            <!--        />-->
         </div>
+        <!-- TODO: move remote control to a separate component -->
         <div
             class="remote-control"
             v-if="showRemoteControl"
