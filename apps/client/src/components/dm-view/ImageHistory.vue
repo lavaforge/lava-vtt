@@ -97,6 +97,10 @@ async function setDisplayImage(hash: string) {
 onMounted(() => {
     fetchImages();
 });
+
+defineExpose({
+    fetchImages,
+});
 </script>
 
 <template>

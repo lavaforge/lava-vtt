@@ -151,18 +151,13 @@ export function initCircleTool(
         });
     };
 
-    paperTool.onMouseUp = (event: paper.ToolEvent) => {
+    paperTool.onMouseUp = (_event: paper.ToolEvent) => {
         circle.closed = true;
-        console.log('Circle tool mouse up, addFow:', addFow);
 
         // Access the baseViewRef to ensure the correct layer is active
         baseViewRef?.activateFowLayer();
 
-        if (addFow) {
-            addPathToFow(circle);
-        } else {
-            removePathFromFow(circle);
-        }
+        addFow ? addPathToFow(circle) : removePathFromFow(circle);
 
         sendFowUpdate();
     };
@@ -206,9 +201,8 @@ export function initRectangleTool(
         rectangle.strokeColor = new paper.Color('red');
     };
 
-    paperTool.onMouseUp = (event: paper.ToolEvent) => {
+    paperTool.onMouseUp = (_event: paper.ToolEvent) => {
         rectangle.closed = true;
-        console.log('Rectangle tool mouse up, addFow:', addFow);
 
         // Access the baseViewRef to ensure the correct layer is active
         baseViewRef?.activateFowLayer();
@@ -333,8 +327,7 @@ export function initArrowTool(
         arrowTip.closed = true;
     };
 
-    paperTool.onMouseUp = (event: paper.ToolEvent) => {
-        console.log('Arrow tool mouse up');
+    paperTool.onMouseUp = (_event: paper.ToolEvent) => {
         sendDrawingUpdate();
     };
 
@@ -358,7 +351,6 @@ export function initFogTool(
     removePathFromFow: (path: paper.Path) => void,
     sendFowUpdate: () => void,
 ) {
-    console.log('Initializing fog tool, addFow:', addFow);
     baseViewRef?.activateFowLayer();
     let path: paper.Path;
     paperTool.onMouseDown = (event: PaperMouseEvent) => {
@@ -381,16 +373,10 @@ export function initFogTool(
         path.closed = true;
         path.simplify();
 
-        console.log('Fog tool mouse up, addFow:', addFow);
-
         // Access the baseViewRef to ensure the correct layer is active
         baseViewRef?.activateFowLayer();
 
-        if (addFow) {
-            addPathToFow(path);
-        } else {
-            removePathFromFow(path);
-        }
+        addFow ? addPathToFow(path) : removePathFromFow(path);
 
         sendFowUpdate();
     };
@@ -429,16 +415,10 @@ export function initPolygonTool(
             path.fillColor = new paper.Color('#00000080');
             // path.simplify();
 
-            console.log('Polygon tool right-click, addFow:', addFow);
-
             // Access the baseViewRef to ensure the correct layer is active
             baseViewRef?.activateFowLayer();
 
-            if (addFow) {
-                addPathToFow(path);
-            } else {
-                removePathFromFow(path);
-            }
+            addFow ? addPathToFow(path) : removePathFromFow(path);
 
             sendFowUpdate();
 
@@ -470,7 +450,6 @@ export function addPathToFow(path: paper.Path) {
                 child instanceof paper.CompoundPath ||
                 child instanceof paper.PathItem)
         ) {
-            console.log('Uniting with child', child);
             combinedPath = combinedPath.unite(child);
         }
     });
@@ -498,7 +477,6 @@ export function removePathFromFow(path: paper.Path) {
                 child instanceof paper.PathItem) &&
             child != path
         ) {
-            console.log('Subtracting child', child);
             substractedPath = child.subtract(path);
         }
     });
