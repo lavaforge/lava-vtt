@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { scg } from 'ioc-service-container';
-
-const emit = defineEmits(['image-uploaded']);
+import { useImageHistoryStore } from '../../logic/useImageHistoryStore';
 
 const conduit = scg('conduit');
 const apiUrl = scg('apiUrl');
@@ -79,18 +78,26 @@ async function handleDrop(e: DragEvent) {
         if (!response.ok) throw new Error('Upload failed');
 
         const hash = await response.text();
-        conduit.broadcast('imageHash', { hash });
+
         uploadProgress.value = 100;
 
-        // Wait a bit for the image to be processed
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        emit('image-uploaded');
+        afterUploadFinished(hash);
     } catch (error) {
         console.error('Upload failed:', error);
         alert('Failed to upload image');
     } finally {
         isUploading.value = false;
     }
+}
+
+/**
+ * After upload finished
+ * @param hash - The hash of the image
+ */
+async function afterUploadFinished(hash: string) {
+    const imageHistoryStore = useImageHistoryStore();
+    imageHistoryStore.reload();
+    await imageHistoryStore.setDisplayImage(hash);
 }
 
 /**

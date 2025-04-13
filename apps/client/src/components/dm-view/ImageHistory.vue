@@ -1,105 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { onMounted } from 'vue';
 import { scg } from 'ioc-service-container';
+import { useImageHistoryStore } from '../../logic/useImageHistoryStore';
 
-/**
- * The image history item interface
- */
-interface ImageHistoryItem {
-    /**
-     * The hash of the image
-     */
-    hash: string;
-    /**
-     * The timestamp of the image
-     */
-    createdAt: string;
-}
-
-const images = ref<ImageHistoryItem[]>([]);
-const isLoading = ref(false);
-const error = ref<string | null>(null);
-const currentPage = ref(1);
-const totalPages = ref(1);
-const pageSize = ref(10);
 const apiUrl = scg('apiUrl');
-const selectedImage = ref<string | null>(null);
-
-/**
- * Fetches the images from the server
- * @param page - The page number to fetch
- */
-async function fetchImages(page: number = 1) {
-    isLoading.value = true;
-    error.value = null;
-
-    try {
-        const response = await fetch(
-            `${apiUrl}/api/image?page=${page}&pageSize=${pageSize.value}`,
-        );
-        if (!response.ok) {
-            throw new Error('Failed to fetch images');
-        }
-        const data = await response.json();
-        images.value = data.images;
-        totalPages.value = Math.ceil(data.total / pageSize.value);
-        currentPage.value = page;
-    } catch (err) {
-        error.value = 'Failed to load image history';
-        console.error('Error fetching images:', err);
-    } finally {
-        isLoading.value = false;
-    }
-}
-
-/**
- * Goes to the next page
- */
-function nextPage() {
-    if (currentPage.value < totalPages.value) {
-        fetchImages(currentPage.value + 1);
-    }
-}
-
-/**
- * Goes to the previous page
- */
-function prevPage() {
-    if (currentPage.value > 1) {
-        fetchImages(currentPage.value - 1);
-    }
-}
-
-/**
- * Sets the display image
- * @param hash - The hash of the image to set as the display image
- */
-async function setDisplayImage(hash: string) {
-    try {
-        const response = await fetch(`${apiUrl}/api/display`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ hash }),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to set display image');
-        }
-
-        selectedImage.value = hash;
-    } catch (err) {
-        console.error('Error setting display image:', err);
-    }
-}
+const imageHistoryStore = useImageHistoryStore();
 
 onMounted(() => {
-    fetchImages();
-});
-
-defineExpose({
-    fetchImages,
+    imageHistoryStore.fetchImages();
 });
 </script>
 
@@ -107,27 +15,29 @@ defineExpose({
     <div class="image-history">
         <h2>Image History</h2>
         <div
-            v-if="isLoading"
+            v-if="imageHistoryStore.isLoading"
             class="loading"
         >
             Loading...
         </div>
         <div
-            v-else-if="error"
+            v-else-if="imageHistoryStore.error"
             class="error"
         >
-            {{ error }}
+            {{ imageHistoryStore.error }}
         </div>
         <div
             v-else
             class="images"
         >
             <div
-                v-for="image in images"
+                v-for="image in imageHistoryStore.images"
                 :key="image.hash"
                 class="image"
-                :class="{ selected: selectedImage === image.hash }"
-                @click="setDisplayImage(image.hash)"
+                :class="{
+                    selected: imageHistoryStore.selectedImage === image.hash,
+                }"
+                @click="imageHistoryStore.setDisplayImage(image.hash)"
             >
                 <img :src="`${apiUrl}/api/image/${image.hash}`" />
                 <span class="timestamp">{{
@@ -138,18 +48,26 @@ defineExpose({
 
         <div class="pagination-controls">
             <button
-                @click="prevPage"
-                :disabled="currentPage === 1 || isLoading"
+                @click="imageHistoryStore.prevPage"
+                :disabled="
+                    imageHistoryStore.currentPage === 1 ||
+                    imageHistoryStore.isLoading
+                "
                 class="pagination-button"
             >
                 Previous
             </button>
             <span class="page-info">
-                Page {{ currentPage }} of {{ totalPages }}
+                Page {{ imageHistoryStore.currentPage }} of
+                {{ imageHistoryStore.totalPages }}
             </span>
             <button
-                @click="nextPage"
-                :disabled="currentPage === totalPages || isLoading"
+                @click="imageHistoryStore.nextPage"
+                :disabled="
+                    imageHistoryStore.currentPage ===
+                        imageHistoryStore.totalPages ||
+                    imageHistoryStore.isLoading
+                "
                 class="pagination-button"
             >
                 Next
