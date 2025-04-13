@@ -222,6 +222,24 @@ function buttonTrigger(button: string) {
     }
 }
 
+const containerRef = ref<HTMLElement | null>(null);
+const isMouseInView = ref(false);
+
+/**
+ * Watch for mouse position relative to container
+ * When the mouse is outside the container, the vertical and horizontal lines following the mouse are not visible
+ */
+watch([mouseX, mouseY], () => {
+    if (!containerRef.value) return;
+
+    const rect = containerRef.value.getBoundingClientRect();
+    isMouseInView.value =
+        mouseX.value >= rect.left &&
+        mouseX.value <= rect.right &&
+        mouseY.value >= rect.top &&
+        mouseY.value <= rect.bottom;
+});
+
 defineExpose({
     initDrawingTools,
     clearDrawingLayer,
@@ -245,10 +263,12 @@ defineExpose({
         <div
             class="vertical-line"
             :style="{ left: mouseX + 'px' }"
+            v-show="isMouseInView"
         ></div>
         <div
             class="horizontal-line"
             :style="{ top: mouseY + 'px' }"
+            v-show="isMouseInView"
         ></div>
         <Transition name="fade">
             <ToolbarButton
