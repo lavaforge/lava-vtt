@@ -1,28 +1,45 @@
 import { raw, Router } from 'express';
 import { scg } from 'ioc-service-container';
-import { Binary } from 'mongodb';
-import { fileTypeFromBuffer } from 'file-type';
-import { createHash } from 'crypto';
+import { ImageController } from '../controllers/image.controller';
 
 const router = Router();
 
+/**
+ * GET route for getting an image
+ * @param req The request object
+ * @param res The response object
+ */
 router.get('/:hash', async (req, res) => {
-    const db = scg('Db');
+    const imageController = scg<ImageController>('ImageController');
     const hash = req.params.hash;
-
-    const image = await db.collection('images').findOne({ hash });
+    const image = await imageController.getImage(hash);
 
     if (image === null) {
         res.status(404).send('Not found');
         return;
     }
 
-    res.set(
-        'Content-Type',
-        (await fileTypeFromBuffer(image.content.buffer))?.mime ?? 'image/png',
-    ).send(image.content.buffer);
+    res.set('Content-Type', image.mimeType).send(image.buffer);
 });
 
+/**
+ * GET route for getting all images
+ * @param req The request object
+ * @param res The response object
+ */
+router.get('/', async (req, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    const imageController = scg<ImageController>('ImageController');
+    const images = await imageController.getImages(page, pageSize);
+    res.send(images);
+});
+
+/**
+ * POST route for uploading an image
+ * @param req The request object
+ * @param res The response object
+ */
 router.post(
     '/',
     raw({
@@ -39,26 +56,10 @@ router.post(
             return res.status(400).send('Invalid binary data');
         }
 
-        const hash = hashBuffer(req.body);
-
-        const db = scg('Db');
-
-        const binary = new Binary(req.body);
-
-        await db
-            .collection('images')
-            .updateOne(
-                { hash },
-                { $setOnInsert: { content: binary, hash } },
-                { upsert: true },
-            );
-
+        const imageController = scg<ImageController>('ImageController');
+        const hash = await imageController.saveImage(req.body);
         res.send(hash);
     },
 );
 
 export { router as imageRouter };
-
-export function hashBuffer(buffer: Buffer): string {
-    return createHash('sha1').update(buffer).digest('hex');
-}

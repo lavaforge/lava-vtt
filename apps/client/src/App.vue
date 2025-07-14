@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import PlayerView from './components/PlayerView.vue';
-import DmView from './components/DmView.vue';
+import DmView from './components/dm-view/DmView.vue';
 
 const isPlayerView = !window.location.search.includes('admin');
 </script>
