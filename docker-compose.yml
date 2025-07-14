@@ -1,3 +1,4 @@
+name: 'lava-vtt'
 version: '3.8'
 
 services:

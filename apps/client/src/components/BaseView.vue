@@ -10,7 +10,7 @@ import { scg } from 'ioc-service-container';
 let fowLayer: paper.Layer;
 let drawingLayer: paper.Layer;
 
-const props = withDefaults(defineProps<{ fogOfWarColor: string }>(), {
+const props = withDefaults(defineProps<{ fogOfWarColor?: string }>(), {
     fogOfWarColor: 'black',
     arrowColor: 'red',
 });
